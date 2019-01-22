@@ -83,7 +83,49 @@ class Database extends EventEmitter
      */
     public static function open(LoopInterface $loop, $filename, $flags = null)
     {
-        $process = new Process('exec ' . \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php'));
+        $command = 'exec ' . \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php');
+
+        // Try to get list of all open FDs (Linux/Mac and others)
+        $fds = @\scandir('/dev/fd');
+
+        // Otherwise try temporarily duplicating file descriptors in the range 0-1024 (FD_SETSIZE).
+        // This is known to work on more exotic platforms and also inside chroot
+        // environments without /dev/fd. Causes many syscalls, but still rather fast.
+        // @codeCoverageIgnoreStart
+        if ($fds === false) {
+            $fds = array();
+            for ($i = 0; $i <= 1024; ++$i) {
+                $copy = @\fopen('php://fd/' . $i, 'r');
+                if ($copy !== false) {
+                    $fds[] = $i;
+                    \fclose($copy);
+                }
+            }
+        }
+        // @codeCoverageIgnoreEnd
+
+        // launch process with default STDIO pipes
+        $pipes = array(
+            array('pipe', 'r'),
+            array('pipe', 'w'),
+            array('pipe', 'w')
+        );
+
+        // do not inherit open FDs by explicitly overwriting existing FDs with dummy files
+        // additionally, close all dummy files in the child process again
+        foreach ($fds as $fd) {
+            if ($fd > 2) {
+                $pipes[$fd] = array('file', '/dev/null', 'r');
+                $command .= ' ' . $fd . '>&-';
+            }
+        }
+
+        // default `sh` only accepts single-digit FDs, so run in bash if needed
+        if ($fds && \max($fds) > 9) {
+            $command = 'exec bash -c ' . \escapeshellarg($command);
+        }
+
+        $process = new Process($command, null, null, $pipes);
         $process->start($loop);
 
         $db = new Database($process);

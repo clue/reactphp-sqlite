@@ -41,6 +41,33 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
+    public function testOpenMemoryDatabaseShouldNotInheritActiveFileDescriptors()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $address = stream_socket_get_name($server, false);
+
+        if (@stream_socket_server('tcp://' . $address) !== false) {
+            $this->markTestSkipped('Platform does not prevent binding to same address (Windows?)');
+        }
+
+        $loop = Factory::create();
+
+        $promise = Database::open($loop, ':memory:');
+
+        // close server and ensure we can start a new server on the previous address
+        // the pending SQLite process should not inherit the existing server socket
+        fclose($server);
+        $server = stream_socket_server('tcp://' . $address);
+        $this->assertTrue(is_resource($server));
+        fclose($server);
+
+        $promise->then(function (Database $db) {
+            $db->close();
+        });
+
+        $loop->run();
+    }
+
     public function testOpenInvalidPathRejects()
     {
         $loop = Factory::create();
@@ -81,6 +108,30 @@ class FunctionalDatabaseTest extends TestCase
         });
 
         $loop->run();
+    }
+
+
+    public function testQuitResolvesAndRunsUntilQuitWhenParentHasManyFileDescriptors()
+    {
+        $servers = array();
+        for ($i = 0; $i < 100; ++$i) {
+            $servers[] = stream_socket_server('tcp://127.0.0.1:0');
+        }
+
+        $loop = Factory::create();
+
+        $promise = Database::open($loop, ':memory:');
+
+        $once = $this->expectCallableOnce();
+        $promise->then(function (Database $db) use ($once){
+            $db->quit()->then($once);
+        });
+
+        $loop->run();
+
+        foreach ($servers as $server) {
+            fclose($server);
+        }
     }
 
     public function testQuitTwiceWillRejectSecondCall()
