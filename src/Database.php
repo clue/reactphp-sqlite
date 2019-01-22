@@ -83,7 +83,7 @@ class Database extends EventEmitter
      */
     public static function open(LoopInterface $loop, $filename, $flags = null)
     {
-        $process = new Process('exec php ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php'));
+        $process = new Process('exec ' . \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php'));
         $process->start($loop);
 
         $db = new Database($process);

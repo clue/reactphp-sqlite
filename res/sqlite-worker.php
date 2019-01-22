@@ -177,7 +177,7 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
 
         $out->write(array(
             'id' => $data->id,
-            'result' => $rows
+            'result' => null
         ));
     } else {
         // no matching method found => report soft error and keep stream alive
