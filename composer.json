@@ -1,0 +1,27 @@
+{
+    "name": "clue/reactphp-sqlite",
+    "description": "Async SQLite database, lightweight non-blocking process wrapper around file-based database extension (ext-sqlite3), built on top of ReactPHP.",
+    "keywords": ["SQLite", "database", "non-blocking", "async", "ReactPHP"],
+    "homepage": "https://github.com/clue/reactphp-sqlite",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christian Lück",
+            "email": "christian@lueck.tv"
+        }
+    ],
+    "autoload": {
+        "psr-4": { "Clue\\React\\SQLite\\": "src/" }
+    },
+    "require": {
+        "php": ">=5.4",
+        "ext-sqlite3": "*",
+        "clue/ndjson-react": "^1.0",
+        "react/child-process": "^0.6",
+        "react/event-loop": "^1.0 || ^0.5 || ^0.4 || ^0.3",
+        "react/promise": "^2.7 || ^1.2.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.0 || ^6.0 || ^5.7 || ^4.8.35"
+    }
+}
