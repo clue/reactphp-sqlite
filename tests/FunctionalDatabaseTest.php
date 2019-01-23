@@ -7,10 +7,27 @@ use PHPUnit\Framework\TestCase;
 
 class FunctionalDatabaseTest extends TestCase
 {
-    public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilClose()
+    public function provideSocketFlags()
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return [[true]];
+        } else {
+            return [[false], [true]];
+        }
+    }
+
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilClose($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -25,10 +42,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -71,10 +96,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testOpenInvalidPathRejects()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testOpenInvalidPathRejects($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open('/dev/foo/bar');
 
@@ -86,10 +119,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testOpenInvalidFlagsRejects()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testOpenInvalidFlagsRejects($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open('::memory::', SQLITE3_OPEN_READONLY);
 
@@ -101,10 +142,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testQuitResolvesAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQuitResolvesAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -116,8 +165,11 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-
-    public function testQuitResolvesAndRunsUntilQuitWhenParentHasManyFileDescriptors()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQuitResolvesAndRunsUntilQuitWhenParentHasManyFileDescriptors($flag)
     {
         $servers = array();
         for ($i = 0; $i < 100; ++$i) {
@@ -126,6 +178,10 @@ class FunctionalDatabaseTest extends TestCase
 
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -141,10 +197,18 @@ class FunctionalDatabaseTest extends TestCase
         }
     }
 
-    public function testQuitTwiceWillRejectSecondCall()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQuitTwiceWillRejectSecondCall($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -157,10 +221,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testQueryIntegerResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryIntegerResolvesWithResultWithTypeIntegerAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -178,10 +250,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 1)), $data);
     }
 
-    public function testQueryStringResolvesWithResultWithTypeStringAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryStringResolvesWithResultWithTypeStringAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -199,10 +279,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 'hellö')), $data);
     }
 
-    public function testQueryIntegerPlaceholderPositionalResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryIntegerPlaceholderPositionalResolvesWithResultWithTypeIntegerAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -220,10 +308,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 1)), $data);
     }
 
-    public function testQueryIntegerPlaceholderNamedResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryIntegerPlaceholderNamedResolvesWithResultWithTypeIntegerAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -241,10 +337,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 1)), $data);
     }
 
-    public function testQueryNullPlaceholderPositionalResolvesWithResultWithTypeNullAndRunsUntilQuit()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryNullPlaceholderPositionalResolvesWithResultWithTypeNullAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -262,10 +366,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => null)), $data);
     }
 
-    public function testQueryRejectsWhenQueryIsInvalid()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryRejectsWhenQueryIsInvalid($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -279,10 +391,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testQueryRejectsWhenClosedImmediately()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryRejectsWhenClosedImmediately($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -296,10 +416,18 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testExecCreateTableResolvesWithResultWithoutRows()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testExecCreateTableResolvesWithResultWithoutRows($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -317,10 +445,18 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertNull($data);
     }
 
-    public function testExecRejectsWhenClosedImmediately()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testExecRejectsWhenClosedImmediately($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
@@ -334,17 +470,25 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
-    public function testExecRejectsWhenAlreadyClosed()
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testExecRejectsWhenAlreadyClosed($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
 
         $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException'));
         $promise->then(function (DatabaseInterface $db) use ($once){
             $db->close();
-            $db->exec('USE a')->then(null, $once);
+            $db->exec('USE a')->then('var_dump', $once);
         });
 
         $loop->run();
@@ -354,8 +498,8 @@ class FunctionalDatabaseTest extends TestCase
     {
         $mock = $this->createCallableMock();
         $mock
-        ->expects($this->never())
-        ->method('__invoke');
+            ->expects($this->never())
+            ->method('__invoke');
 
         return $mock;
     }
@@ -364,8 +508,8 @@ class FunctionalDatabaseTest extends TestCase
     {
         $mock = $this->createCallableMock();
         $mock
-        ->expects($this->once())
-        ->method('__invoke');
+            ->expects($this->once())
+            ->method('__invoke');
 
         return $mock;
     }
@@ -374,9 +518,9 @@ class FunctionalDatabaseTest extends TestCase
     {
         $mock = $this->createCallableMock();
         $mock
-        ->expects($this->once())
-        ->method('__invoke')
-        ->with($value);
+            ->expects($this->once())
+            ->method('__invoke')
+            ->with($value);
 
         return $mock;
     }

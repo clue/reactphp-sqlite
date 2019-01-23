@@ -91,7 +91,11 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
     {
         $promise = $this->send('close', array());
 
-        $this->process->stdin->end();
+        if ($this->process->stdin === $this->process->stdout) {
+            $promise->then(function () { $this->process->stdin->close(); });
+        } else {
+            $this->process->stdin->end();
+        }
 
         return $promise;
     }
@@ -120,7 +124,7 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
     /** @internal */
     public function send($method, array $params)
     {
-        if (!$this->process->stdin->isWritable()) {
+        if ($this->closed || !$this->process->stdin->isWritable()) {
             return \React\Promise\reject(new \RuntimeException('Database closed'));
         }
 

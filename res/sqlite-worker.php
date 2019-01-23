@@ -1,10 +1,23 @@
 <?php
 
-use React\EventLoop\Factory;
-use React\Stream\ReadableResourceStream;
-use React\Stream\WritableResourceStream;
+// This child worker process will be started by the main process to start communication over process pipe I/O
+//
+// Communication happens via newline-delimited JSON-RPC messages, see:
+// $ php res/sqlite-worker.php
+// < {"id":0,"method":"open","params":["test.db"]}
+// > {"id":0,"result":true}
+//
+// Or via socket connection (used for Windows, which does not support non-blocking process pipe I/O)
+// $ nc localhost 8080
+// $ php res/sqlite-worker.php localhost:8080
+
 use Clue\React\NDJson\Decoder;
 use Clue\React\NDJson\Encoder;
+use React\EventLoop\Factory;
+use React\Stream\DuplexResourceStream;
+use React\Stream\ReadableResourceStream;
+use React\Stream\ThroughStream;
+use React\Stream\WritableResourceStream;
 
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     // local project development, go from /res to /vendor
@@ -15,8 +28,27 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 }
 
 $loop = Factory::create();
-$in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
-$out = new Encoder(new WritableResourceStream(\STDOUT, $loop));
+
+if (isset($_SERVER['argv'][1])) {
+    // socket address given, so try to connect through socket (Windows)
+    $socket = stream_socket_client($_SERVER['argv'][1]);
+    $stream = new DuplexResourceStream($socket, $loop);
+
+    // pipe input through a wrapper stream so that an error on the input stream
+    // will not immediately close the output stream without a chance to report
+    // this error through the output stream.
+    $through = new ThroughStream();
+    $stream->on('data', function ($data) use ($through) {
+        $through->write($data);
+    });
+
+    $in = new Decoder($through);
+    $out = new Encoder($stream);
+} else {
+    // no socket address given, use process I/O pipes
+    $in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
+    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop));
+}
 
 // report error when input is invalid NDJSON
 $in->on('error', function (Exception $e) use ($out) {
