@@ -202,6 +202,12 @@ query like this:
 $db->query('SELECT * FROM user WHERE id > :id', ['id' => $id]);
 ```
 
+All placeholder values will automatically be mapped to the native SQLite
+datatypes and all result values will automatically be mapped to the
+native PHP datatypes. This conversion supports `int`, `float`, `string`
+(text) and `null`. SQLite does not have a native boolean type, so `true`
+and `false` will be mapped to integer values `1` and `0` respectively.
+
 #### quit()
 
 The `quit(): PromiseInterface<void, Exception>` method can be used to

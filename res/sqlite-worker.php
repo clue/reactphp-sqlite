@@ -137,7 +137,7 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                 $statement->bindValue(
                     $index + 1,
                     $value,
-                    $value === null ? \SQLITE3_NULL : \is_int($value) ? \SQLITE3_INTEGER : \SQLITE3_TEXT
+                    $value === null ? \SQLITE3_NULL : \is_int($value) || \is_bool($value) ? \SQLITE3_INTEGER : \is_float($value) ? \SQLITE3_FLOAT : \SQLITE3_TEXT
                 );
             }
             $result = @$statement->execute();
@@ -176,7 +176,7 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
             $statement->bindValue(
                 $index,
                 $value,
-                $value === null ? \SQLITE3_NULL : \is_int($value) ? \SQLITE3_INTEGER : \SQLITE3_TEXT
+                $value === null ? \SQLITE3_NULL : \is_int($value) || \is_bool($value) ? \SQLITE3_INTEGER : \is_float($value) ? \SQLITE3_FLOAT : \SQLITE3_TEXT
             );
         }
         $result = @$statement->execute();

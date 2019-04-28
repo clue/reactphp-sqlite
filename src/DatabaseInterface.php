@@ -136,6 +136,12 @@ interface DatabaseInterface extends EventEmitterInterface
      * $db->query('SELECT * FROM user WHERE id > :id', ['id' => $id]);
      * ```
      *
+     * All placeholder values will automatically be mapped to the native SQLite
+     * datatypes and all result values will automatically be mapped to the
+     * native PHP datatypes. This conversion supports `int`, `float`, `string`
+     * (text) and `null`. SQLite does not have a native boolean type, so `true`
+     * and `false` will be mapped to integer values `1` and `0` respectively.
+     *
      * @param string $sql    SQL statement
      * @param array  $params Parameters which should be bound to query
      * @return PromiseInterface<Result> Resolves with Result instance or rejects with Exception
