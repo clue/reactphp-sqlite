@@ -1,23 +1,24 @@
 <?php
 
-use React\EventLoop\Factory;
-use Clue\React\SQLite\Database;
-use PHPUnit\Framework\TestCase;
+use Clue\React\SQLite\DatabaseInterface;
+use Clue\React\SQLite\Factory;
 use Clue\React\SQLite\Result;
+use PHPUnit\Framework\TestCase;
 
 class FunctionalDatabaseTest extends TestCase
 {
     public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilClose()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $promise->then(
-            $this->expectCallableOnceWith($this->isInstanceOf('Clue\React\SQLite\Database'))
+            $this->expectCallableOnceWith($this->isInstanceOf('Clue\React\SQLite\DatabaseInterface'))
         );
 
-        $promise->then(function (Database $db) {
+        $promise->then(function (DatabaseInterface $db) {
             $db->close();
         });
 
@@ -26,15 +27,16 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testOpenMemoryDatabaseResolvesWithDatabaseAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $promise->then(
-            $this->expectCallableOnceWith($this->isInstanceOf('Clue\React\SQLite\Database'))
+            $this->expectCallableOnceWith($this->isInstanceOf('Clue\React\SQLite\DatabaseInterface'))
         );
 
-        $promise->then(function (Database $db) {
+        $promise->then(function (DatabaseInterface $db) {
             $db->quit();
         });
 
@@ -50,9 +52,10 @@ class FunctionalDatabaseTest extends TestCase
             $this->markTestSkipped('Platform does not prevent binding to same address (Windows?)');
         }
 
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         // close server and ensure we can start a new server on the previous address
         // the pending SQLite process should not inherit the existing server socket
@@ -61,7 +64,7 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertTrue(is_resource($server));
         fclose($server);
 
-        $promise->then(function (Database $db) {
+        $promise->then(function (DatabaseInterface $db) {
             $db->close();
         });
 
@@ -70,9 +73,10 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testOpenInvalidPathRejects()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, '/dev/foo/bar');
+        $promise = $factory->open('/dev/foo/bar');
 
         $promise->then(
             null,
@@ -84,9 +88,10 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testOpenInvalidFlagsRejects()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, '::memory::', SQLITE3_OPEN_READONLY);
+        $promise = $factory->open('::memory::', SQLITE3_OPEN_READONLY);
 
         $promise->then(
             null,
@@ -98,12 +103,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQuitResolvesAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnce();
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->quit()->then($once);
         });
 
@@ -118,12 +124,13 @@ class FunctionalDatabaseTest extends TestCase
             $servers[] = stream_socket_server('tcp://127.0.0.1:0');
         }
 
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnce();
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->quit()->then($once);
         });
 
@@ -136,12 +143,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQuitTwiceWillRejectSecondCall()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnce();
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->quit();
             $db->quit()->then(null, $once);
         });
@@ -151,12 +159,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryIntegerResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->query('SELECT 1 AS value')->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -171,12 +180,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryStringResolvesWithResultWithTypeStringAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->query('SELECT "hellö" AS value')->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -191,12 +201,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryIntegerPlaceholderPositionalResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->query('SELECT ? AS value', array(1))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -211,12 +222,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryIntegerPlaceholderNamedResolvesWithResultWithTypeIntegerAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->query('SELECT :value AS value', array('value' => 1))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -231,12 +243,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryNullPlaceholderPositionalResolvesWithResultWithTypeNullAndRunsUntilQuit()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->query('SELECT ? AS value', array(null))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -251,12 +264,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryRejectsWhenQueryIsInvalid()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException'));
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->query('nope')->then(null, $once);
 
             $db->quit();
@@ -267,12 +281,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testQueryRejectsWhenClosedImmediately()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException'));
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->query('SELECT 1')->then(null, $once);
 
             $db->close();
@@ -283,12 +298,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testExecCreateTableResolvesWithResultWithoutRows()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $data = 'n/a';
-        $promise->then(function (Database $db) use (&$data){
+        $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->exec('CREATE TABLE foo (bar STRING)')->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
@@ -303,12 +319,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testExecRejectsWhenClosedImmediately()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException'));
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->exec('USE a')->then(null, $once);
 
             $db->close();
@@ -319,12 +336,13 @@ class FunctionalDatabaseTest extends TestCase
 
     public function testExecRejectsWhenAlreadyClosed()
     {
-        $loop = Factory::create();
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
 
-        $promise = Database::open($loop, ':memory:');
+        $promise = $factory->open(':memory:');
 
         $once = $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException'));
-        $promise->then(function (Database $db) use ($once){
+        $promise->then(function (DatabaseInterface $db) use ($once){
             $db->close();
             $db->exec('USE a')->then(null, $once);
         });
