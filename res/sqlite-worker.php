@@ -6,7 +6,13 @@ use React\Stream\WritableResourceStream;
 use Clue\React\NDJson\Decoder;
 use Clue\React\NDJson\Encoder;
 
-require __DIR__ . '/../vendor/autoload.php';
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    // local project development, go from /res to /vendor
+    require __DIR__ . '/../vendor/autoload.php';
+} else {
+    // project installed as dependency, go upwards from /vendor/clue/reactphp-sqlite/res
+    require __DIR__ . '/../../../autoload.php';
+}
 
 $loop = Factory::create();
 $in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
