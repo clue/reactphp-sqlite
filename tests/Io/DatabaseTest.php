@@ -1,7 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use Clue\React\SQLite\Database;
+use Clue\React\SQLite\DatabaseInterface;
 use React\Stream\ThroughStream;
 
 class DatabaseTest extends TestCase
@@ -17,8 +17,8 @@ class DatabaseTest extends TestCase
         $process->stdin = $stdin;
         $process->stdout = $stdout;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionMethod($database, '__construct');
@@ -42,8 +42,8 @@ class DatabaseTest extends TestCase
         $process->stdin = $stdin;
         $process->stdout = $stdout;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionMethod($database, '__construct');
@@ -65,8 +65,8 @@ class DatabaseTest extends TestCase
         $process = $this->getMockBuilder('React\ChildProcess\Process')->disableOriginalConstructor()->getMock();
         $process->stdin = $stdin;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
@@ -87,8 +87,8 @@ class DatabaseTest extends TestCase
         $process = $this->getMockBuilder('React\ChildProcess\Process')->disableOriginalConstructor()->getMock();
         $process->stdin = $stdin;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
@@ -110,8 +110,8 @@ class DatabaseTest extends TestCase
         $process = $this->getMockBuilder('React\ChildProcess\Process')->disableOriginalConstructor()->getMock();
         $process->stdin = $stdin;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
@@ -132,8 +132,8 @@ class DatabaseTest extends TestCase
         $process = $this->getMockBuilder('React\ChildProcess\Process')->disableOriginalConstructor()->getMock();
         $process->stdin = $stdin;
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
@@ -157,8 +157,8 @@ class DatabaseTest extends TestCase
         $process->expects($this->once())->method('terminate');
         $process->pipes = array($stdin, $stdout);
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
@@ -181,8 +181,8 @@ class DatabaseTest extends TestCase
         $process->expects($this->once())->method('terminate');
         $process->pipes = array($stdin, $stdout);
 
-        /* @var Database $database */
-        $ref = new ReflectionClass('Clue\React\SQLite\Database');
+        /* @var DatabaseInterface $database */
+        $ref = new ReflectionClass('Clue\React\SQLite\Io\ProcessIoDatabase');
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');

@@ -2,14 +2,11 @@
 
 namespace Clue\React\SQLite;
 
-use Clue\React\NDJson\Decoder;
-use Evenement\EventEmitter;
-use React\ChildProcess\Process;
-use React\Promise\Deferred;
+use Evenement\EventEmitterInterface;
 use React\Promise\PromiseInterface;
 
 /**
- * The `Database` class represents a connection that is responsible for
+ * The `DatabaseInterface` represents a connection that is responsible for
  * communicating with your SQLite database wrapper, managing the connection state
  * and sending your database queries.
  *
@@ -42,52 +39,8 @@ use React\Promise\PromiseInterface;
  *
  *     See also the [`close()`](#close) method.
  */
-class Database extends EventEmitter
+interface DatabaseInterface extends EventEmitterInterface
 {
-    private $process;
-    private $pending = array();
-    private $id = 0;
-    private $closed = false;
-
-    /**
-     * @internal see Factory instead
-     * @see Factory
-     * @param Process $process
-     */
-    public function __construct(Process $process)
-    {
-        $this->process = $process;
-
-        $in = new Decoder($process->stdout, true, 512, 0, 16 * 1024 * 1024);
-        $in->on('data', function ($data) use ($in) {
-            if (!isset($data['id']) || !isset($this->pending[$data['id']])) {
-                $this->emit('error', array(new \RuntimeException('Invalid message received')));
-                $in->close();
-                return;
-            }
-
-            /* @var Deferred $deferred */
-            $deferred = $this->pending[$data['id']];
-            unset($this->pending[$data['id']]);
-
-            if (isset($data['error'])) {
-                $deferred->reject(new \RuntimeException(
-                    isset($data['error']['message']) ? $data['error']['message'] : 'Unknown error',
-                    isset($data['error']['code']) ? $data['error']['code'] : 0
-                ));
-            } else {
-                $deferred->resolve($data['result']);
-            }
-        });
-        $in->on('error', function (\Exception $e) {
-            $this->emit('error', array($e));
-            $this->close();
-        });
-        $in->on('close', function () {
-            $this->close();
-        });
-    }
-
     /**
      * Executes an async query.
      *
@@ -129,16 +82,7 @@ class Database extends EventEmitter
      * @param string $sql SQL statement
      * @return PromiseInterface<Result> Resolves with Result instance or rejects with Exception
      */
-    public function exec($sql)
-    {
-        return $this->send('exec', array($sql))->then(function ($data) {
-            $result = new Result();
-            $result->changed = $data['changed'];
-            $result->insertId = $data['insertId'];
-
-            return $result;
-        });
-    }
+    public function exec($sql);
 
     /**
      * Performs an async query.
@@ -196,18 +140,7 @@ class Database extends EventEmitter
      * @param array  $params Parameters which should be bound to query
      * @return PromiseInterface<Result> Resolves with Result instance or rejects with Exception
      */
-    public function query($sql, array $params = array())
-    {
-        return $this->send('query', array($sql, $params))->then(function ($data) {
-            $result = new Result();
-            $result->changed = $data['changed'];
-            $result->insertId = $data['insertId'];
-            $result->columns = $data['columns'];
-            $result->rows = $data['rows'];
-
-            return $result;
-        });
-    }
+    public function query($sql, array $params = array());
 
     /**
      * Quits (soft-close) the connection.
@@ -225,14 +158,7 @@ class Database extends EventEmitter
      *
      * @return PromiseInterface<void> Resolves (with void) or rejects with Exception
      */
-    public function quit()
-    {
-        $promise = $this->send('close', array());
-
-        $this->process->stdin->end();
-
-        return $promise;
-    }
+    public function quit();
 
     /**
      * Force-close the connection.
@@ -249,44 +175,5 @@ class Database extends EventEmitter
      *
      * @return void
      */
-    public function close()
-    {
-        if ($this->closed) {
-            return;
-        }
-
-        $this->closed = true;
-        foreach ($this->process->pipes as $pipe) {
-            $pipe->close();
-        }
-        $this->process->terminate();
-
-        foreach ($this->pending as $one) {
-            $one->reject(new \RuntimeException('Database closed'));
-        }
-        $this->pending = array();
-
-        $this->emit('close');
-        $this->removeAllListeners();
-    }
-
-    /** @internal */
-    public function send($method, array $params)
-    {
-        if (!$this->process->stdin->isWritable()) {
-            return \React\Promise\reject(new \RuntimeException('Database closed'));
-        }
-
-        $id = ++$this->id;
-        $this->process->stdin->write(\json_encode(array(
-            'id' => $id,
-            'method' => $method,
-            'params' => $params
-        ), \JSON_UNESCAPED_SLASHES) . "\n");
-
-        $deferred = new Deferred();
-        $this->pending[$id] = $deferred;
-
-        return $deferred->promise();
-    }
+    public function close();
 }

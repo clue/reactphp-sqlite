@@ -4,13 +4,14 @@ namespace Clue\React\SQLite;
 
 use React\ChildProcess\Process;
 use React\EventLoop\LoopInterface;
+use Clue\React\SQLite\Io\ProcessIoDatabase;
 
 class Factory
 {
     private $loop;
 
     /**
-     * The `Factory` is responsible for opening your [`Database`](#database) instance.
+     * The `Factory` is responsible for opening your [`DatabaseInterface`](#databaseinterface) instance.
      * It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage).
      *
      * ```php
@@ -28,14 +29,14 @@ class Factory
     /**
      * Opens a new database connection for the given SQLite database file.
      *
-     * This method returns a promise that will resolve with a `Database` on
+     * This method returns a promise that will resolve with a `DatabaseInterface` on
      * success or will reject with an `Exception` on error. The SQLite extension
      * is inherently blocking, so this method will spawn an SQLite worker process
      * to run all SQLite commands and queries in a separate process without
      * blocking the main process.
      *
      * ```php
-     * $factory->open('users.db')->then(function (Database $db) {
+     * $factory->open('users.db')->then(function (DatabaseInterface $db) {
      *     // database ready
      *     // $db->query('INSERT INTO users (name) VALUES ("test")');
      *     // $db->quit();
@@ -48,7 +49,7 @@ class Factory
      * SQLite database. By default, open uses `SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE`.
      *
      * ```php
-     * $factory->open('users.db', SQLITE3_OPEN_READONLY)->then(function (Database $db) {
+     * $factory->open('users.db', SQLITE3_OPEN_READONLY)->then(function (DatabaseInterface $db) {
      *     // database ready (read-only)
      *     // $db->quit();
      * }, function (Exception $e) {
@@ -58,7 +59,7 @@ class Factory
      *
      * @param string $filename
      * @param ?int   $flags
-     * @return PromiseInterface<Database> Resolves with Database instance or rejects with Exception
+     * @return PromiseInterface<DatabaseInterface> Resolves with DatabaseInterface instance or rejects with Exception
      */
     public function open($filename, $flags = null)
     {
@@ -107,7 +108,7 @@ class Factory
         $process = new Process($command, null, null, $pipes);
         $process->start($this->loop);
 
-        $db = new Database($process);
+        $db = new ProcessIoDatabase($process);
         $args = array($filename);
         if ($flags !== null) {
             $args[] = $flags;

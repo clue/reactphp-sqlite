@@ -1,6 +1,6 @@
 <?php
 
-use Clue\React\SQLite\Database;
+use Clue\React\SQLite\DatabaseInterface;
 use Clue\React\SQLite\Factory;
 use Clue\React\SQLite\Result;
 
@@ -10,7 +10,7 @@ $loop = React\EventLoop\Factory::create();
 $factory = new Factory($loop);
 
 $search = isset($argv[1]) ? $argv[1] : 'foo';
-$factory->open('test.db')->then(function (Database $db) use ($search){
+$factory->open('test.db')->then(function (DatabaseInterface $db) use ($search){
     $db->query('SELECT * FROM foo WHERE bar LIKE ?', ['%' . $search . '%'])->then(function (Result $result) {
         echo 'Found ' . count($result->rows) . ' rows: ' . PHP_EOL;
         echo implode("\t", $result->columns) . PHP_EOL;
