@@ -7,6 +7,8 @@ built on top of [ReactPHP](https://reactphp.org/).
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
+  * [Factory](#factory)
+    * [open()](#open)
   * [Database](#database)
     * [exec()](#exec)
     * [query()](#query)
@@ -27,9 +29,10 @@ existing SQLite database file (or automatically create it on first run) and then
 
 ```php
 $loop = React\EventLoop\Factory::create();
+$factory = new Clue\React\SQLite\Factory($loop);
 
 $name = 'Alice';
-Clue\React\SQLite\Database::open($loop, 'users.db')->then(
+$factory->open('users.db')->then(
     function (Clue\React\SQLite\Database $db) use ($name) {
         $db->exec('CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
 
@@ -53,15 +56,19 @@ See also the [examples](examples).
 
 ## Usage
 
-### Database
+### Factory
 
-The `Database` class represents a connection that is responsible for
-comunicating with your SQLite database wrapper, managing the connection state
-and sending your database queries.
+The `Factory` is responsible for opening your [`Database`](#database) instance.
+It also registers everything with the main [`EventLoop`](https://github.com/reactphp/event-loop#usage).
+
+```php
+$loop = React\EventLoop\Factory::create();
+$factory = new Clue\React\SQLite\Factory($loop);
+```
 
 #### open()
 
-The static `open(LoopInterface $loop, string $filename, int $flags = null): PromiseInterface<Database>` method can be used to
+The `open(string $filename, int $flags = null): PromiseInterface<Database>` method can be used to
 open a new database connection for the given SQLite database file.
 
 This method returns a promise that will resolve with a `Database` on
@@ -71,7 +78,7 @@ to run all SQLite commands and queries in a separate process without
 blocking the main process.
 
 ```php
-Database::open($loop, 'users.db')->then(function (Database $db) {
+$factory->open('users.db')->then(function (Database $db) {
     // database ready
     // $db->query('INSERT INTO users (name) VALUES ("test")');
     // $db->quit();
@@ -84,13 +91,19 @@ The optional `$flags` parameter is used to determine how to open the
 SQLite database. By default, open uses `SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE`.
 
 ```php
-Database::open($loop, 'users.db', SQLITE3_OPEN_READONLY)->then(function (Database $db) {
+$factory->open('users.db', SQLITE3_OPEN_READONLY)->then(function (Database $db) {
     // database ready (read-only)
     // $db->quit();
 }, function (Exception $e) {
     echo 'Error: ' . $e->getMessage() . PHP_EOL;
 });
 ```
+
+### Database
+
+The `Database` class represents a connection that is responsible for
+comunicating with your SQLite database wrapper, managing the connection state
+and sending your database queries.
 
 #### exec()
 

@@ -1,15 +1,16 @@
 <?php
 
-use React\EventLoop\Factory;
 use Clue\React\SQLite\Database;
+use Clue\React\SQLite\Factory;
 use Clue\React\SQLite\Result;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$loop = Factory::create();
+$loop = React\EventLoop\Factory::create();
+$factory = new Factory($loop);
 
 $n = isset($argv[1]) ? $argv[1] : 1;
-Database::open($loop, 'test.db')->then(function (Database $db) use ($n) {
+$factory->open('test.db')->then(function (Database $db) use ($n) {
     $db->exec('CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
 
     for ($i = 0; $i < $n; ++$i) {
