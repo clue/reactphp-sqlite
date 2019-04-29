@@ -17,8 +17,18 @@ matrix:
   include:
     - php: hhvm
       install: composer require phpunit/phpunit:^5 --dev --no-interaction
+    - name: "Windows"
+      os: windows
+      language: shell # no built-in php support
+      before_install:
+        - choco install php
+        - choco install composer
+        - export PATH="$(powershell -Command '("Process", "Machine" | % { [Environment]::GetEnvironmentVariable("PATH", $_) -Split ";" -Replace "\\$", "" } | Select -Unique | % { cygpath $_ }) -Join ":"')"
+        - php -r "file_put_contents(php_ini_loaded_file(),'extension_dir=ext'.PHP_EOL,FILE_APPEND);"
+        - php -r "file_put_contents(php_ini_loaded_file(),'extension=sqlite3'.PHP_EOL,FILE_APPEND);"
   allow_failures:
     - php: hhvm
+    - os: windows
 
 install:
   - composer install --no-interaction

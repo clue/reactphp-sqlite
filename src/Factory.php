@@ -5,10 +5,15 @@ namespace Clue\React\SQLite;
 use React\ChildProcess\Process;
 use React\EventLoop\LoopInterface;
 use Clue\React\SQLite\Io\ProcessIoDatabase;
+use React\Stream\DuplexResourceStream;
+use React\Promise\Deferred;
+use React\Stream\ThroughStream;
 
 class Factory
 {
     private $loop;
+
+    private $useSocket;
 
     /**
      * The `Factory` is responsible for opening your [`DatabaseInterface`](#databaseinterface) instance.
@@ -24,6 +29,9 @@ class Factory
     public function __construct(LoopInterface $loop)
     {
         $this->loop = $loop;
+
+        // use socket I/O for Windows only, use faster process pipes everywhere else
+        $this->useSocket = DIRECTORY_SEPARATOR === '\\';
     }
 
     /**
@@ -33,7 +41,9 @@ class Factory
      * success or will reject with an `Exception` on error. The SQLite extension
      * is inherently blocking, so this method will spawn an SQLite worker process
      * to run all SQLite commands and queries in a separate process without
-     * blocking the main process.
+     * blocking the main process. On Windows, it uses a temporary network socket
+     * for this communication, on all other platforms it communicates over
+     * standard process I/O pipes.
      *
      * ```php
      * $factory->open('users.db')->then(function (DatabaseInterface $db) {
@@ -62,6 +72,11 @@ class Factory
      * @return PromiseInterface<DatabaseInterface> Resolves with DatabaseInterface instance or rejects with Exception
      */
     public function open($filename, $flags = null)
+    {
+        return $this->useSocket ? $this->openSocketIo($filename, $flags) : $this->openProcessIo($filename, $flags);
+    }
+
+    private function openProcessIo($filename, $flags = null)
     {
         $command = 'exec ' . \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php');
 
@@ -120,5 +135,83 @@ class Factory
             $db->close();
             throw $e;
         });
+    }
+
+    private function openSocketIo($filename, $flags = null)
+    {
+        $command = \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php');
+
+        // launch process without default STDIO pipes
+        $null = \DIRECTORY_SEPARATOR === '\\' ? 'nul' : '/dev/null';
+        $pipes = array(
+            array('file', $null, 'r'),
+            array('file', $null, 'w'),
+            STDERR // array('file', $null, 'w'),
+        );
+
+        // start temporary socket on random address
+        $server = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+        if ($server === false) {
+            return \React\Promise\reject(
+                new \RuntimeException('Unable to start temporary socket I/O server: ' . $errstr, $errno)
+            );
+        }
+
+        // pass random server address to child process to connect back to parent process
+        stream_set_blocking($server, false);
+        $command .= ' ' . stream_socket_get_name($server, false);
+
+        $process = new Process($command, null, null, $pipes);
+        $process->start($this->loop);
+
+        $deferred = new Deferred(function () use ($process, $server) {
+            $this->loop->removeReadStream($server);
+            fclose($server);
+            $process->terminate();
+
+            throw new \RuntimeException('Opening database cancelled');
+        });
+
+        // time out after a few seconds if we don't receive a connection
+        $timeout = $this->loop->addTimer(5.0, function () use ($server, $deferred, $process) {
+            $this->loop->removeReadStream($server);
+            fclose($server);
+            $process->terminate();
+
+            $deferred->reject(new \RuntimeException('No connection detected'));
+        });
+
+        $this->loop->addReadStream($server, function () use ($server, $timeout, $filename, $flags, $deferred, $process) {
+            // accept once connection on server socket and stop server socket
+            $this->loop->cancelTimer($timeout);
+            $peer = stream_socket_accept($server, 0);
+            $this->loop->removeReadStream($server);
+            fclose($server);
+
+            // use this one connection as fake process I/O streams
+            $connection = new DuplexResourceStream($peer, $this->loop, -1);
+            $process->stdin = $process->stdout = $connection;
+            $connection->on('close', function () use ($process) {
+                $process->terminate();
+            });
+            $process->on('exit', function () use ($connection) {
+                $connection->close();
+            });
+
+            $db = new ProcessIoDatabase($process);
+            $args = array($filename);
+            if ($flags !== null) {
+                $args[] = $flags;
+            }
+
+            $db->send('open', $args)->then(function () use ($deferred, $db) {
+                $deferred->resolve($db);
+            }, function ($e) use ($deferred, $db) {
+                $db->close();
+                $deferred->reject($e);
+            });
+        });
+
+        return $deferred->promise();
     }
 }

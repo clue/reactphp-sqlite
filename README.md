@@ -75,7 +75,9 @@ This method returns a promise that will resolve with a `DatabaseInterface` on
 success or will reject with an `Exception` on error. The SQLite extension
 is inherently blocking, so this method will spawn an SQLite worker process
 to run all SQLite commands and queries in a separate process without
-blocking the main process.
+blocking the main process. On Windows, it uses a temporary network socket
+for this communication, on all other platforms it communicates over
+standard process I/O pipes.
 
 ```php
 $factory->open('users.db')->then(function (DatabaseInterface $db) {
