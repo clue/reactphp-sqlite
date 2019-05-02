@@ -281,15 +281,21 @@ class FunctionalDatabaseTest extends TestCase
 
     public function provideSqlDataWillBeReturnedWithType()
     {
-        return [
-            ['42', 42],
-            ['1.5', 1.5],
-            ['null', null],
-            ['"hello"', 'hello'],
-            ['"hellö"', 'hellö'],
-            ['true', 1],
-            ['false', 0],
-        ];
+        return array_merge(
+            [
+                ['42', 42],
+                ['2.5', 2.5],
+                ['null', null],
+                ['"hello"', 'hello'],
+                ['"hellö"', 'hellö']
+            ],
+            SQLite3::version()['versionNumber'] < 3023000 ? [] : [
+                // boolean identifiers exist only as of SQLite 3.23.0 (2018-04-02)
+                // @link https://www.sqlite.org/lang_expr.html#booleanexpr
+                ['true', 1],
+                ['false', 0]
+            ]
+        );
     }
 
     /**
