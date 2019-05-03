@@ -85,7 +85,20 @@ class FunctionalDatabaseTest extends TestCase
         // close server and ensure we can start a new server on the previous address
         // the pending SQLite process should not inherit the existing server socket
         fclose($server);
-        $server = stream_socket_server('tcp://' . $address);
+
+        $server = @stream_socket_server('tcp://' . $address);
+        if ($server === false) {
+            // There's a very short race condition where the forked php process
+            // first has to `dup()` the file descriptor specs before invoking
+            // `exec()` to switch to the actual `ssh` child process. We don't
+            // need to wait for the child process to be ready, but only for the
+            // forked process to close the file descriptors. This happens ~80%
+            // of times on single core machines and almost never on multi core
+            // systems, so simply wait 5ms (plenty of time!) and retry again.
+            usleep(5000);
+            $server = stream_socket_server('tcp://' . $address);
+        }
+
         $this->assertTrue(is_resource($server));
         fclose($server);
 
