@@ -43,11 +43,11 @@ if (isset($_SERVER['argv'][1])) {
     });
 
     $in = new Decoder($through);
-    $out = new Encoder($stream);
+    $out = new Encoder($stream, (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
 } else {
     // no socket address given, use process I/O pipes
     $in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
-    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop));
+    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop), (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
 }
 
 // report error when input is invalid NDJSON
@@ -134,10 +134,24 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
         } else {
             $statement = $db->prepare($data->params[0]);
             foreach ($data->params[1] as $index => $value) {
+                if ($value === null) {
+                    $type = \SQLITE3_NULL;
+                } elseif ($value === true || $value === false) {
+                    // explicitly cast bool to int because SQLite does not have a native boolean
+                    $type = \SQLITE3_INTEGER;
+                    $value = (int)$value;
+                } elseif (\is_int($value)) {
+                    $type = \SQLITE3_INTEGER;
+                } elseif (\is_float($value)) {
+                    $type = \SQLITE3_FLOAT;
+                } else {
+                    $type = \SQLITE3_TEXT;
+                }
+
                 $statement->bindValue(
                     $index + 1,
                     $value,
-                    $value === null ? \SQLITE3_NULL : \is_int($value) ? \SQLITE3_INTEGER : \SQLITE3_TEXT
+                    $type
                 );
             }
             $result = @$statement->execute();
@@ -173,10 +187,24 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
     } elseif ($data->method === 'query' && $db !== null && \count($data->params) === 2 && \is_string($data->params[0]) && \is_object($data->params[1])) {
         $statement = $db->prepare($data->params[0]);
         foreach ($data->params[1] as $index => $value) {
+            if ($value === null) {
+                $type = \SQLITE3_NULL;
+            } elseif ($value === true || $value === false) {
+                // explicitly cast bool to int because SQLite does not have a native boolean
+                $type = \SQLITE3_INTEGER;
+                $value = (int)$value;
+            } elseif (\is_int($value)) {
+                $type = \SQLITE3_INTEGER;
+            } elseif (\is_float($value)) {
+                $type = \SQLITE3_FLOAT;
+            } else {
+                $type = \SQLITE3_TEXT;
+            }
+
             $statement->bindValue(
                 $index,
                 $value,
-                $value === null ? \SQLITE3_NULL : \is_int($value) ? \SQLITE3_INTEGER : \SQLITE3_TEXT
+                $type
             );
         }
         $result = @$statement->execute();

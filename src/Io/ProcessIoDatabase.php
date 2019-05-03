@@ -133,7 +133,7 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
             'id' => $id,
             'method' => $method,
             'params' => $params
-        ), \JSON_UNESCAPED_SLASHES) . "\n");
+        ), \JSON_UNESCAPED_SLASHES | (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0)) . "\n");
 
         $deferred = new Deferred();
         $this->pending[$id] = $deferred;

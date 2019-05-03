@@ -292,53 +292,44 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 'hellö')), $data);
     }
 
-    /**
-     * @dataProvider provideSocketFlags
-     * @param bool $flag
-     */
-    public function testQueryIntegerPlaceholderPositionalResolvesWithResultWithTypeIntegerAndRunsUntilQuit($flag)
+    public function provideSqlDataWillBeReturnedWithType()
     {
-        $loop = React\EventLoop\Factory::create();
-        $factory = new Factory($loop);
-
-        $ref = new ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
-        $ref->setValue($factory, $flag);
-
-        $promise = $factory->open(':memory:');
-
-        $data = null;
-        $promise->then(function (DatabaseInterface $db) use (&$data){
-            $db->query('SELECT ? AS value', array(1))->then(function (Result $result) use (&$data) {
-                $data = $result->rows;
-            });
-
-            $db->quit();
-        });
-
-        $loop->run();
-
-        $this->assertSame(array(array('value' => 1)), $data);
+        return array_merge(
+            [
+                ['42', 42],
+                ['2.5', 2.5],
+                ['null', null],
+                ['"hello"', 'hello'],
+                ['"hellö"', 'hellö']
+            ],
+            (PHP_VERSION_ID < 50606) ? [] : [
+                // preserving zero fractions is only supported as of PHP 5.6.6
+                ['1.0', 1.0]
+            ],
+            (SQLite3::version()['versionNumber'] < 3023000) ? [] : [
+                // boolean identifiers exist only as of SQLite 3.23.0 (2018-04-02)
+                // @link https://www.sqlite.org/lang_expr.html#booleanexpr
+                ['true', 1],
+                ['false', 0]
+            ]
+        );
     }
 
     /**
-     * @dataProvider provideSocketFlags
-     * @param bool $flag
+     * @dataProvider provideSqlDataWillBeReturnedWithType
+     * @param mixed $value
+     * @param mixed $expected
      */
-    public function testQueryIntegerPlaceholderNamedResolvesWithResultWithTypeIntegerAndRunsUntilQuit($flag)
+    public function testQueryValueInStatementResolvesWithResultWithTypeAndRunsUntilQuit($value, $expected)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
 
-        $ref = new ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
-        $ref->setValue($factory, $flag);
-
         $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (DatabaseInterface $db) use (&$data){
-            $db->query('SELECT :value AS value', array('value' => 1))->then(function (Result $result) use (&$data) {
+        $promise->then(function (DatabaseInterface $db) use (&$data, $value){
+            $db->query('SELECT ' . $value . ' AS value')->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
 
@@ -347,27 +338,41 @@ class FunctionalDatabaseTest extends TestCase
 
         $loop->run();
 
-        $this->assertSame(array(array('value' => 1)), $data);
+        $this->assertSame(array(array('value' => $expected)), $data);
+    }
+
+    public function provideDataWillBeReturnedWithType()
+    {
+        return array_merge(
+            [
+                [0],
+                [1],
+                [1.5],
+                [null],
+                ['hello'],
+                ['hellö']
+            ],
+            (PHP_VERSION_ID < 50606) ? [] : [
+                // preserving zero fractions is only supported as of PHP 5.6.6
+                [1.0]
+            ]
+        );
     }
 
     /**
-     * @dataProvider provideSocketFlags
-     * @param bool $flag
+     * @dataProvider provideDataWillBeReturnedWithType
+     * @param mixed $value
      */
-    public function testQueryNullPlaceholderPositionalResolvesWithResultWithTypeNullAndRunsUntilQuit($flag)
+    public function testQueryValuePlaceholderPositionalResolvesWithResultWithExactTypeAndRunsUntilQuit($value)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
 
-        $ref = new ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
-        $ref->setValue($factory, $flag);
-
         $promise = $factory->open(':memory:');
 
         $data = null;
-        $promise->then(function (DatabaseInterface $db) use (&$data){
-            $db->query('SELECT ? AS value', array(null))->then(function (Result $result) use (&$data) {
+        $promise->then(function (DatabaseInterface $db) use (&$data, $value){
+            $db->query('SELECT ? AS value', array($value))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
 
@@ -376,7 +381,98 @@ class FunctionalDatabaseTest extends TestCase
 
         $loop->run();
 
-        $this->assertSame(array(array('value' => null)), $data);
+        $this->assertSame(array(array('value' => $value)), $data);
+    }
+
+    /**
+     * @dataProvider provideDataWillBeReturnedWithType
+     * @param mixed $value
+     */
+    public function testQueryValuePlaceholderNamedResolvesWithResultWithExactTypeAndRunsUntilQuit($value)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data, $value){
+            $db->query('SELECT :value AS value', array('value' => $value))->then(function (Result $result) use (&$data) {
+                $data = $result->rows;
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame(array(array('value' => $value)), $data);
+    }
+
+    public function provideDataWillBeReturnedWithOtherType()
+    {
+        return array_merge(
+            [
+                [true, 1],
+                [false, 0],
+            ],
+            (PHP_VERSION_ID >= 50606) ? [] : [
+                // preserving zero fractions is supported as of PHP 5.6.6, otherwise cast to int
+                [1.0, 1]
+            ]
+        );
+    }
+
+    /**
+     * @dataProvider provideDataWillBeReturnedWithOtherType
+     * @param mixed $value
+     * @param mixed $expected
+     */
+    public function testQueryValuePlaceholderPositionalResolvesWithResultWithOtherTypeAndRunsUntilQuit($value, $expected)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data, $value){
+            $db->query('SELECT ? AS value', array($value))->then(function (Result $result) use (&$data) {
+                $data = $result->rows;
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame(array(array('value' => $expected)), $data);
+    }
+
+    /**
+     * @dataProvider provideDataWillBeReturnedWithOtherType
+     * @param mixed $value
+     * @param mixed $expected
+     */
+    public function testQueryValuePlaceholderNamedResolvesWithResultWithOtherTypeAndRunsUntilQuit($value, $expected)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data, $value){
+            $db->query('SELECT :value AS value', array('value' => $value))->then(function (Result $result) use (&$data) {
+                $data = $result->rows;
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame(array(array('value' => $expected)), $data);
     }
 
     /**
