@@ -76,12 +76,29 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
 
     public function query($sql, array $params = array())
     {
+        // base64-encode any string that is not valid UTF-8 without control characters (BLOB)
+        foreach ($params as &$value) {
+            if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
+                $value = ['base64' => \base64_encode($value)];
+            }
+        }
+
         return $this->send('query', array($sql, $params))->then(function ($data) {
             $result = new Result();
             $result->changed = $data['changed'];
             $result->insertId = $data['insertId'];
             $result->columns = $data['columns'];
-            $result->rows = $data['rows'];
+
+            // base64-decode string result values for BLOBS
+            $result->rows = [];
+            foreach ($data['rows'] as $row) {
+                foreach ($row as &$value) {
+                    if (isset($value['base64'])) {
+                        $value = \base64_decode($value['base64']);
+                    }
+                }
+                $result->rows[] = $row;
+            }
 
             return $result;
         });

@@ -300,7 +300,9 @@ class FunctionalDatabaseTest extends TestCase
                 ['2.5', 2.5],
                 ['null', null],
                 ['"hello"', 'hello'],
-                ['"hellö"', 'hellö']
+                ['"hellö"', 'hellö'],
+                ['X\'01020300\'', "\x01\x02\x03\x00"],
+                ['X\'3FF3\'', "\x3f\xf3"]
             ],
             (PHP_VERSION_ID < 50606) ? [] : [
                 // preserving zero fractions is only supported as of PHP 5.6.6
@@ -345,16 +347,21 @@ class FunctionalDatabaseTest extends TestCase
     {
         return array_merge(
             [
-                [0],
-                [1],
-                [1.5],
-                [null],
-                ['hello'],
-                ['hellö']
+                [0, 'INTEGER'],
+                [1, 'INTEGER'],
+                [1.5, 'REAL'],
+                [null, 'NULL'],
+                ['hello', 'TEXT'],
+                ['hellö', 'TEXT'],
+                ["hello\tworld\r\n", 'TEXT'],
+                [utf8_decode('hello wörld!'), 'BLOB'],
+                ["hello\x7fö", 'BLOB'],
+                ["\x03\x02\x001", 'BLOB'],
+                ["a\000b", 'BLOB']
             ],
             (PHP_VERSION_ID < 50606) ? [] : [
                 // preserving zero fractions is only supported as of PHP 5.6.6
-                [1.0]
+                [1.0, 'REAL']
             ]
         );
     }
@@ -363,7 +370,7 @@ class FunctionalDatabaseTest extends TestCase
      * @dataProvider provideDataWillBeReturnedWithType
      * @param mixed $value
      */
-    public function testQueryValuePlaceholderPositionalResolvesWithResultWithExactTypeAndRunsUntilQuit($value)
+    public function testQueryValuePlaceholderPositionalResolvesWithResultWithExactTypeAndRunsUntilQuit($value, $type)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
@@ -372,7 +379,7 @@ class FunctionalDatabaseTest extends TestCase
 
         $data = null;
         $promise->then(function (DatabaseInterface $db) use (&$data, $value){
-            $db->query('SELECT ? AS value', array($value))->then(function (Result $result) use (&$data) {
+            $db->query('SELECT ? AS value, UPPER(TYPEOF(?)) as type', array($value, $value))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
 
@@ -381,14 +388,14 @@ class FunctionalDatabaseTest extends TestCase
 
         $loop->run();
 
-        $this->assertSame(array(array('value' => $value)), $data);
+        $this->assertSame(array(array('value' => $value, 'type' => $type)), $data);
     }
 
     /**
      * @dataProvider provideDataWillBeReturnedWithType
      * @param mixed $value
      */
-    public function testQueryValuePlaceholderNamedResolvesWithResultWithExactTypeAndRunsUntilQuit($value)
+    public function testQueryValuePlaceholderNamedResolvesWithResultWithExactTypeAndRunsUntilQuit($value, $type)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
@@ -397,7 +404,7 @@ class FunctionalDatabaseTest extends TestCase
 
         $data = null;
         $promise->then(function (DatabaseInterface $db) use (&$data, $value){
-            $db->query('SELECT :value AS value', array('value' => $value))->then(function (Result $result) use (&$data) {
+            $db->query('SELECT :value AS value, UPPER(TYPEOF(:value)) AS type', array('value' => $value))->then(function (Result $result) use (&$data) {
                 $data = $result->rows;
             });
 
@@ -406,7 +413,7 @@ class FunctionalDatabaseTest extends TestCase
 
         $loop->run();
 
-        $this->assertSame(array(array('value' => $value)), $data);
+        $this->assertSame(array(array('value' => $value, 'type' => $type)), $data);
     }
 
     public function provideDataWillBeReturnedWithOtherType()
