@@ -289,7 +289,11 @@ class FunctionalDatabaseTest extends TestCase
                 ['"hello"', 'hello'],
                 ['"hellö"', 'hellö']
             ],
-            SQLite3::version()['versionNumber'] < 3023000 ? [] : [
+            (PHP_VERSION_ID < 50606) ? [] : [
+                // preserving zero fractions is only supported as of PHP 5.6.6
+                ['1.0', 1.0]
+            ],
+            (SQLite3::version()['versionNumber'] < 3023000) ? [] : [
                 // boolean identifiers exist only as of SQLite 3.23.0 (2018-04-02)
                 // @link https://www.sqlite.org/lang_expr.html#booleanexpr
                 ['true', 1],
@@ -326,14 +330,20 @@ class FunctionalDatabaseTest extends TestCase
 
     public function provideDataWillBeReturnedWithType()
     {
-        return [
-            [0],
-            [1],
-            [1.5],
-            [null],
-            ['hello'],
-            ['hellö']
-        ];
+        return array_merge(
+            [
+                [0],
+                [1],
+                [1.5],
+                [null],
+                ['hello'],
+                ['hellö']
+            ],
+            (PHP_VERSION_ID < 50606) ? [] : [
+                // preserving zero fractions is only supported as of PHP 5.6.6
+                [1.0]
+            ]
+        );
     }
 
     /**
@@ -388,11 +398,16 @@ class FunctionalDatabaseTest extends TestCase
 
     public function provideDataWillBeReturnedWithOtherType()
     {
-        return [
-            'true' => [true, 1],
-            'false' => [false, 0],
-            'float without fraction is int' => [1.0, 1]
-        ];
+        return array_merge(
+            [
+                [true, 1],
+                [false, 0],
+            ],
+            (PHP_VERSION_ID >= 50606) ? [] : [
+                // preserving zero fractions is supported as of PHP 5.6.6, otherwise cast to int
+                [1.0, 1]
+            ]
+        );
     }
 
     /**

@@ -43,11 +43,11 @@ if (isset($_SERVER['argv'][1])) {
     });
 
     $in = new Decoder($through);
-    $out = new Encoder($stream);
+    $out = new Encoder($stream, (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
 } else {
     // no socket address given, use process I/O pipes
     $in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
-    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop));
+    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop), (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
 }
 
 // report error when input is invalid NDJSON
