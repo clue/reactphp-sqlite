@@ -298,15 +298,12 @@ class FunctionalDatabaseTest extends TestCase
             [
                 ['42', 42],
                 ['2.5', 2.5],
+                ['1.0', 1.0],
                 ['null', null],
                 ['"hello"', 'hello'],
                 ['"hellö"', 'hellö'],
                 ['X\'01020300\'', "\x01\x02\x03\x00"],
                 ['X\'3FF3\'', "\x3f\xf3"]
-            ],
-            (PHP_VERSION_ID < 50606) ? [] : [
-                // preserving zero fractions is only supported as of PHP 5.6.6
-                ['1.0', 1.0]
             ],
             (SQLite3::version()['versionNumber'] < 3023000) ? [] : [
                 // boolean identifiers exist only as of SQLite 3.23.0 (2018-04-02)
@@ -345,25 +342,20 @@ class FunctionalDatabaseTest extends TestCase
 
     public function provideDataWillBeReturnedWithType()
     {
-        return array_merge(
-            [
-                [0, 'INTEGER'],
-                [1, 'INTEGER'],
-                [1.5, 'REAL'],
-                [null, 'NULL'],
-                ['hello', 'TEXT'],
-                ['hellö', 'TEXT'],
-                ["hello\tworld\r\n", 'TEXT'],
-                [utf8_decode('hello wörld!'), 'BLOB'],
-                ["hello\x7fö", 'BLOB'],
-                ["\x03\x02\x001", 'BLOB'],
-                ["a\000b", 'BLOB']
-            ],
-            (PHP_VERSION_ID < 50606) ? [] : [
-                // preserving zero fractions is only supported as of PHP 5.6.6
-                [1.0, 'REAL']
-            ]
-        );
+        return [
+            [0, 'INTEGER'],
+            [1, 'INTEGER'],
+            [1.5, 'REAL'],
+            [1.0, 'REAL'],
+            [null, 'NULL'],
+            ['hello', 'TEXT'],
+            ['hellö', 'TEXT'],
+            ["hello\tworld\r\n", 'TEXT'],
+            [utf8_decode('hello wörld!'), 'BLOB'],
+            ["hello\x7fö", 'BLOB'],
+            ["\x03\x02\x001", 'BLOB'],
+            ["a\000b", 'BLOB']
+        ];
     }
 
     /**
@@ -418,16 +410,10 @@ class FunctionalDatabaseTest extends TestCase
 
     public function provideDataWillBeReturnedWithOtherType()
     {
-        return array_merge(
-            [
-                [true, 1],
-                [false, 0],
-            ],
-            (PHP_VERSION_ID >= 50606) ? [] : [
-                // preserving zero fractions is supported as of PHP 5.6.6, otherwise cast to int
-                [1.0, 1]
-            ]
-        );
+        return [
+            [true, 1],
+            [false, 0],
+        ];
     }
 
     /**

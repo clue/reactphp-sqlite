@@ -211,11 +211,6 @@ characters will be mapped to `TEXT`, binary strings will be mapped to
 does not have a native boolean type, so `true` and `false` will be mapped
 to integer values `1` and `0` respectively.
 
-> Legacy PHP: Note that on legacy PHP < 5.6.6, a `float` without a
-  fraction (such as `1.0`) may end up as an `integer` instead. You're
-  highly recommended to use a supported PHP version or you may have to
-  use explicit SQL casts to work around this.
-
 #### quit()
 
 The `quit(): PromiseInterface<void, Exception>` method can be used to

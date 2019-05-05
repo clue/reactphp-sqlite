@@ -80,6 +80,8 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
         foreach ($params as &$value) {
             if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
                 $value = ['base64' => \base64_encode($value)];
+            } elseif (\is_float($value)) {
+                $value = ['float' => $value];
             }
         }
 
@@ -95,6 +97,8 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
                 foreach ($row as &$value) {
                     if (isset($value['base64'])) {
                         $value = \base64_decode($value['base64']);
+                    } elseif (isset($value['float'])) {
+                        $value = (float)$value['float'];
                     }
                 }
                 $result->rows[] = $row;
@@ -150,7 +154,7 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
             'id' => $id,
             'method' => $method,
             'params' => $params
-        ), \JSON_UNESCAPED_SLASHES | (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0)) . "\n");
+        ), \JSON_UNESCAPED_SLASHES) . "\n");
 
         $deferred = new Deferred();
         $this->pending[$id] = $deferred;

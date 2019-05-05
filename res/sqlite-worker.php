@@ -43,11 +43,11 @@ if (isset($_SERVER['argv'][1])) {
     });
 
     $in = new Decoder($through);
-    $out = new Encoder($stream, (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
+    $out = new Encoder($stream);
 } else {
     // no socket address given, use process I/O pipes
     $in = new Decoder(new ReadableResourceStream(\STDIN, $loop));
-    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop), (\PHP_VERSION_ID >= 50606 ? JSON_PRESERVE_ZERO_FRACTION : 0));
+    $out = new Encoder(new WritableResourceStream(\STDOUT, $loop));
 }
 
 // report error when input is invalid NDJSON
@@ -142,8 +142,9 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                     $value = (int)$value;
                 } elseif (\is_int($value)) {
                     $type = \SQLITE3_INTEGER;
-                } elseif (\is_float($value)) {
+                } elseif (isset($value->float)) {
                     $type = \SQLITE3_FLOAT;
+                    $value = (float)$value->float;
                 } elseif (isset($value->base64)) {
                     // base64-decode string parameters as BLOB
                     $type = \SQLITE3_BLOB;
@@ -178,6 +179,8 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                 foreach ($row as &$value) {
                     if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
                         $value = ['base64' => \base64_encode($value)];
+                    } elseif (\is_float($value)) {
+                        $value = ['float' => $value];
                     }
                 }
                 $rows[] = $row;
