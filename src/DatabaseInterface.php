@@ -139,8 +139,11 @@ interface DatabaseInterface extends EventEmitterInterface
      * All placeholder values will automatically be mapped to the native SQLite
      * datatypes and all result values will automatically be mapped to the
      * native PHP datatypes. This conversion supports `int`, `float`, `string`
-     * (text) and `null`. SQLite does not have a native boolean type, so `true`
-     * and `false` will be mapped to integer values `1` and `0` respectively.
+     * and `null`. Any `string` that is valid UTF-8 without any control
+     * characters will be mapped to `TEXT`, binary strings will be mapped to
+     * `BLOB`. Both `TEXT` and `BLOB` will always be mapped to `string` . SQLite
+     * does not have a native boolean type, so `true` and `false` will be mapped
+     * to integer values `1` and `0` respectively.
      *
      * > Legacy PHP: Note that on legacy PHP < 5.6.6, a `float` without a
      *   fraction (such as `1.0`) may end up as an `integer` instead. You're

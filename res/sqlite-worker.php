@@ -127,9 +127,9 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                 )
             ));
         }
-    } elseif ($data->method === 'query' && $db !== null && \count($data->params) === 2 && \is_string($data->params[0]) && \is_array($data->params[1])) {
+    } elseif ($data->method === 'query' && $db !== null && \count($data->params) === 2 && \is_string($data->params[0]) && (\is_array($data->params[1]) || \is_object($data->params[1]))) {
         // execute statement and suppress PHP warnings
-        if (\count($data->params[1]) === 0) {
+        if ($data->params[1] === []) {
             $result = @$db->query($data->params[0]);
         } else {
             $statement = $db->prepare($data->params[0]);
@@ -144,12 +144,16 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                     $type = \SQLITE3_INTEGER;
                 } elseif (\is_float($value)) {
                     $type = \SQLITE3_FLOAT;
+                } elseif (isset($value->base64)) {
+                    // base64-decode string parameters as BLOB
+                    $type = \SQLITE3_BLOB;
+                    $value = \base64_decode($value->base64);
                 } else {
                     $type = \SQLITE3_TEXT;
                 }
 
                 $statement->bindValue(
-                    $index + 1,
+                    \is_int($index) ? $index + 1 : $index,
                     $value,
                     $type
                 );
@@ -170,58 +174,12 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
 
             $rows = array();
             while (($row = $result->fetchArray(\SQLITE3_ASSOC)) !== false) {
-                $rows[] = $row;
-            }
-            $result->finalize();
-
-            $out->write(array(
-                'id' => $data->id,
-                'result' => array(
-                    'columns' => $columns,
-                    'rows' => $rows,
-                    'insertId' => $db->lastInsertRowID(),
-                    'changed' => $db->changes()
-                )
-            ));
-        }
-    } elseif ($data->method === 'query' && $db !== null && \count($data->params) === 2 && \is_string($data->params[0]) && \is_object($data->params[1])) {
-        $statement = $db->prepare($data->params[0]);
-        foreach ($data->params[1] as $index => $value) {
-            if ($value === null) {
-                $type = \SQLITE3_NULL;
-            } elseif ($value === true || $value === false) {
-                // explicitly cast bool to int because SQLite does not have a native boolean
-                $type = \SQLITE3_INTEGER;
-                $value = (int)$value;
-            } elseif (\is_int($value)) {
-                $type = \SQLITE3_INTEGER;
-            } elseif (\is_float($value)) {
-                $type = \SQLITE3_FLOAT;
-            } else {
-                $type = \SQLITE3_TEXT;
-            }
-
-            $statement->bindValue(
-                $index,
-                $value,
-                $type
-            );
-        }
-        $result = @$statement->execute();
-
-        if ($result === false) {
-            $out->write(array(
-                'id' => $data->id,
-                'error' => array('message' => $db->lastErrorMsg())
-            ));
-        } else {
-            $columns = array();
-            for ($i = 0, $n = $result->numColumns(); $i < $n; ++$i) {
-                $columns[] = $result->columnName($i);
-            }
-
-            $rows = array();
-            while (($row = $result->fetchArray(\SQLITE3_ASSOC)) !== false) {
+                // base64-encode any string that is not valid UTF-8 without control characters (BLOB)
+                foreach ($row as &$value) {
+                    if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
+                        $value = ['base64' => \base64_encode($value)];
+                    }
+                }
                 $rows[] = $row;
             }
             $result->finalize();
