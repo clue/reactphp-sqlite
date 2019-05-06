@@ -8,15 +8,12 @@ php:
   - 7.1
   - 7.2
   - 7.3
-# - hhvm # requires legacy phpunit & ignore errors, see below
 
 # lock distro so new future defaults will not break the build
 dist: trusty
 
 matrix:
   include:
-    - php: hhvm
-      install: composer require phpunit/phpunit:^5 --dev --no-interaction
     - name: "Windows"
       os: windows
       language: shell # no built-in php support
@@ -27,7 +24,6 @@ matrix:
         - php -r "file_put_contents(php_ini_loaded_file(),'extension_dir=ext'.PHP_EOL,FILE_APPEND);"
         - php -r "file_put_contents(php_ini_loaded_file(),'extension=sqlite3'.PHP_EOL,FILE_APPEND);"
   allow_failures:
-    - php: hhvm
     - os: windows
 
 install:
