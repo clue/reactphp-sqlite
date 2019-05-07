@@ -174,16 +174,21 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
             }
 
             $rows = array();
-            while (($row = $result->fetchArray(\SQLITE3_ASSOC)) !== false) {
-                // base64-encode any string that is not valid UTF-8 without control characters (BLOB)
-                foreach ($row as &$value) {
-                    if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
-                        $value = ['base64' => \base64_encode($value)];
-                    } elseif (\is_float($value)) {
-                        $value = ['float' => $value];
+            if ($result->numColumns() !== 0) {
+                // Fetch all rows only if this result set has any columns.
+                // INSERT/UPDATE/DELETE etc. do not return any columns, trying
+                // to fetch the results here will issue the same query again.
+                while (($row = $result->fetchArray(\SQLITE3_ASSOC)) !== false) {
+                    // base64-encode any string that is not valid UTF-8 without control characters (BLOB)
+                    foreach ($row as &$value) {
+                        if (\is_string($value) && \preg_match('/[\x00-\x08\x11\x12\x14-\x1f\x7f]/u', $value) !== 0) {
+                            $value = ['base64' => \base64_encode($value)];
+                        } elseif (\is_float($value)) {
+                            $value = ['float' => $value];
+                        }
                     }
+                    $rows[] = $row;
                 }
-                $rows[] = $row;
             }
             $result->finalize();
 

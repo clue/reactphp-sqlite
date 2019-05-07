@@ -596,6 +596,36 @@ class FunctionalDatabaseTest extends TestCase
         $loop->run();
     }
 
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryInsertResolvesWithResultWithLastInsertIdAndRunsUntilQuit($flag)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data){
+            $db->exec('CREATE TABLE foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
+            $db->query('INSERT INTO foo (bar) VALUES (?)', ['test'])->then(function (Result $result) use (&$data) {
+                $data = $result->insertId;
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame(1, $data);
+    }
+
     protected function expectCallableNever()
     {
         $mock = $this->createCallableMock();
