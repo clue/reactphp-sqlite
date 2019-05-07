@@ -12,7 +12,7 @@ use React\Stream\ThroughStream;
 class Factory
 {
     private $loop;
-
+    private $bin = PHP_BINARY;
     private $useSocket;
 
     /**
@@ -32,6 +32,18 @@ class Factory
 
         // use socket I/O for Windows only, use faster process pipes everywhere else
         $this->useSocket = DIRECTORY_SEPARATOR === '\\';
+
+        // if this is the php-cgi binary, check if we can execute the php binary instead
+        $candidate = \str_replace('-cgi', '', $this->bin);
+        if ($candidate !== $this->bin && \is_executable($candidate)) {
+            $this->bin = $candidate; // @codeCoverageIgnore
+        }
+
+        // if `php` is a symlink to the php binary, use the shorter `php` name
+        // this is purely cosmetic feature for the process list
+        if (\realpath($this->which('php')) === $this->bin) {
+            $this->bin = 'php'; // @codeCoverageIgnore
+        }
     }
 
     /**
@@ -78,7 +90,7 @@ class Factory
 
     private function openProcessIo($filename, $flags = null)
     {
-        $command = 'exec ' . \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php');
+        $command = 'exec ' . \escapeshellarg($this->bin) . ' sqlite-worker.php';
 
         // Try to get list of all open FDs (Linux/Mac and others)
         $fds = @\scandir('/dev/fd');
@@ -120,7 +132,7 @@ class Factory
             $command = 'exec bash -c ' . \escapeshellarg($command);
         }
 
-        $process = new Process($command, null, null, $pipes);
+        $process = new Process($command, __DIR__ . '/../res', null, $pipes);
         $process->start($this->loop);
 
         $db = new ProcessIoDatabase($process);
@@ -139,14 +151,14 @@ class Factory
 
     private function openSocketIo($filename, $flags = null)
     {
-        $command = \escapeshellarg(\PHP_BINARY) . ' ' . \escapeshellarg(__DIR__ . '/../res/sqlite-worker.php');
+        $command = \escapeshellarg($this->bin) . ' sqlite-worker.php';
 
         // launch process without default STDIO pipes
         $null = \DIRECTORY_SEPARATOR === '\\' ? 'nul' : '/dev/null';
         $pipes = array(
             array('file', $null, 'r'),
             array('file', $null, 'w'),
-            STDERR // array('file', $null, 'w'),
+            \defined('STDERR') ? \STDERR : \fopen('php://stderr', 'w')
         );
 
         // start temporary socket on random address
@@ -161,7 +173,7 @@ class Factory
         stream_set_blocking($server, false);
         $command .= ' ' . stream_socket_get_name($server, false);
 
-        $process = new Process($command, null, null, $pipes);
+        $process = new Process($command, __DIR__ . '/../res', null, $pipes);
         $process->start($this->loop);
 
         $deferred = new Deferred(function () use ($process, $server) {
@@ -213,5 +225,20 @@ class Factory
         });
 
         return $deferred->promise();
+    }
+
+    /**
+     * @param string $bin
+     * @return string|null
+     * @codeCoverageIgnore
+     */
+    private function which($bin)
+    {
+        foreach (\explode(\PATH_SEPARATOR, \getenv('PATH')) as $path) {
+            if (\is_executable($path . \DIRECTORY_SEPARATOR . $bin)) {
+                return $path . \DIRECTORY_SEPARATOR . $bin;
+            }
+        }
+        return null;
     }
 }
