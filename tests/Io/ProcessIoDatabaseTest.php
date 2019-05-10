@@ -4,7 +4,7 @@ use PHPUnit\Framework\TestCase;
 use Clue\React\SQLite\DatabaseInterface;
 use React\Stream\ThroughStream;
 
-class DatabaseTest extends TestCase
+class ProcessIoDatabaseTest extends TestCase
 {
     public function testDatabaseWillEmitErrorWhenStdoutReportsNonNdjsonStream()
     {
