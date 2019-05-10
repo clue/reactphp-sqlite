@@ -234,11 +234,12 @@ class LazyDatabaseTest extends TestCase
         $this->db->exec('CREATE');
     }
 
-    public function testExecFollowedByIdleTimerWillCloseUnderlyingConnectionWithoutCloseEvent()
+    public function testExecFollowedByIdleTimerWillQuitUnderlyingConnectionWithoutCloseEvent()
     {
-        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->disableOriginalConstructor()->setMethods(array('exec', 'close'))->getMock();
+        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->disableOriginalConstructor()->setMethods(array('exec', 'quit', 'close'))->getMock();
         $client->expects($this->once())->method('exec')->willReturn(\React\Promise\resolve());
-        $client->expects($this->once())->method('close')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(\React\Promise\resolve());
+        $client->expects($this->never())->method('close');
 
         $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
 
@@ -255,6 +256,59 @@ class LazyDatabaseTest extends TestCase
 
         $this->assertNotNull($timeout);
         $timeout();
+    }
+
+    public function testExecFollowedByIdleTimerWillCloseUnderlyingConnectionWhenQuitFails()
+    {
+        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->setMethods(array('exec', 'quit', 'close'))->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('exec')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(\React\Promise\reject());
+        $client->expects($this->once())->method('close');
+
+        $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
+
+        $timeout = null;
+        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
+        $this->loop->expects($this->once())->method('addTimer')->with($this->anything(), $this->callback(function ($cb) use (&$timeout) {
+            $timeout = $cb;
+            return true;
+        }))->willReturn($timer);
+
+        $this->db->on('close', $this->expectCallableNever());
+
+        $this->db->exec('CREATE');
+
+        $this->assertNotNull($timeout);
+        $timeout();
+    }
+
+    public function testExecAfterIdleTimerWillCloseUnderlyingConnectionBeforeCreatingSecondConnection()
+    {
+        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->setMethods(array('exec', 'quit', 'close'))->disableOriginalConstructor()->getMock();
+        $client->expects($this->once())->method('exec')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(new Promise(function () { }));
+        $client->expects($this->once())->method('close');
+
+        $this->factory->expects($this->exactly(2))->method('open')->willReturnOnConsecutiveCalls(
+            \React\Promise\resolve($client),
+            new Promise(function () { })
+        );
+
+        $timeout = null;
+        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
+        $this->loop->expects($this->once())->method('addTimer')->with($this->anything(), $this->callback(function ($cb) use (&$timeout) {
+            $timeout = $cb;
+            return true;
+        }))->willReturn($timer);
+
+        $this->db->on('close', $this->expectCallableNever());
+
+        $this->db->exec('CREATE');
+
+        $this->assertNotNull($timeout);
+        $timeout();
+
+        $this->db->exec('CREATE');
     }
 
     public function testQueryWillCreateUnderlyingDatabaseAndReturnPendingPromise()
@@ -407,11 +461,12 @@ class LazyDatabaseTest extends TestCase
         $this->db->query('CREATE');
     }
 
-    public function testQueryFollowedByIdleTimerWillCloseUnderlyingConnectionWithoutCloseEvent()
+    public function testQueryFollowedByIdleTimerWillQuitUnderlyingConnectionWithoutCloseEvent()
     {
-        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->disableOriginalConstructor()->setMethods(array('query', 'close'))->getMock();
+        $client = $this->getMockBuilder('Clue\React\SQLite\Io\ProcessIoDatabase')->disableOriginalConstructor()->setMethods(array('query', 'quit', 'close'))->getMock();
         $client->expects($this->once())->method('query')->willReturn(\React\Promise\resolve());
-        $client->expects($this->once())->method('close')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(\React\Promise\resolve());
+        $client->expects($this->never())->method('close');
 
         $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
 
@@ -523,6 +578,44 @@ class LazyDatabaseTest extends TestCase
         });
         $ref->on('close', $this->expectCallableOnce());
         $deferred->reject(new \RuntimeException());
+    }
+
+    public function testCloseAfterQuitAfterExecWillCloseUnderlyingConnectionWhenQuitIsStillPending()
+    {
+        $client = $this->getMockBuilder('Clue\React\SQLite\DatabaseInterface')->getMock();
+        $client->expects($this->once())->method('exec')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(new Promise(function () { }));
+        $client->expects($this->once())->method('close');
+
+        $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
+
+        $this->db->exec('CREATE');
+        $this->db->quit();
+        $this->db->close();
+    }
+
+    public function testCloseAfterExecAfterIdleTimeoutWillCloseUnderlyingConnectionWhenQuitIsStillPending()
+    {
+        $client = $this->getMockBuilder('Clue\React\SQLite\DatabaseInterface')->getMock();
+        $client->expects($this->once())->method('exec')->willReturn(\React\Promise\resolve());
+        $client->expects($this->once())->method('quit')->willReturn(new Promise(function () { }));
+        $client->expects($this->once())->method('close');
+
+        $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
+
+        $timeout = null;
+        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
+        $this->loop->expects($this->once())->method('addTimer')->with($this->anything(), $this->callback(function ($cb) use (&$timeout) {
+            $timeout = $cb;
+            return true;
+        }))->willReturn($timer);
+
+        $this->db->exec('CREATE');
+
+        $this->assertNotNull($timeout);
+        $timeout();
+
+        $this->db->close();
     }
 
     public function testQuitWillCloseDatabaseIfUnderlyingConnectionIsNotPendingAndResolveImmediately()

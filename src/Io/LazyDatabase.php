@@ -19,6 +19,8 @@ class LazyDatabase extends EventEmitter implements DatabaseInterface
     private $loop;
 
     private $closed = false;
+    /**@var ?DatabaseInterface */
+    private $disconnecting;
     /** @var ?\React\Promise\PromiseInterface */
     private $promise;
     private $idlePeriod = 60.0;
@@ -49,6 +51,12 @@ class LazyDatabase extends EventEmitter implements DatabaseInterface
 
         if ($this->closed) {
             return \React\Promise\reject(new \RuntimeException('Connection closed'));
+        }
+
+        // force-close connection if still waiting for previous disconnection
+        if ($this->disconnecting !== null) {
+            $this->disconnecting->close();
+            $this->disconnecting = null;
         }
 
         $this->promise = $promise = $this->factory->open($this->filename, $this->flags);
@@ -127,6 +135,12 @@ class LazyDatabase extends EventEmitter implements DatabaseInterface
 
         $this->closed = true;
 
+        // force-close connection if still waiting for previous disconnection
+        if ($this->disconnecting !== null) {
+            $this->disconnecting->close();
+            $this->disconnecting = null;
+        }
+
         // either close active connection or cancel pending connection attempt
         if ($this->promise !== null) {
             $this->promise->then(function (DatabaseInterface $db) {
@@ -164,7 +178,18 @@ class LazyDatabase extends EventEmitter implements DatabaseInterface
         if ($this->pending < 1 && $this->idlePeriod >= 0) {
             $this->idleTimer = $this->loop->addTimer($this->idlePeriod, function () {
                 $this->promise->then(function (DatabaseInterface $db) {
-                    $db->close();
+                    $this->disconnecting = $db;
+                    $db->quit()->then(
+                        function () {
+                            // successfully disconnected => remove reference
+                            $this->disconnecting = null;
+                        },
+                        function () use ($db) {
+                            // soft-close failed => force-close connection
+                            $db->close();
+                            $this->disconnecting = null;
+                        }
+                    );
                 });
                 $this->promise = null;
                 $this->idleTimer = null;
