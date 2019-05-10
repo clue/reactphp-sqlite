@@ -9,6 +9,7 @@ built on top of [ReactPHP](https://reactphp.org/).
 * [Usage](#usage)
   * [Factory](#factory)
     * [open()](#open)
+    * [openLazy()](#openlazy)
   * [DatabaseInterface](#databaseinterface)
     * [exec()](#exec)
     * [query()](#query)
@@ -31,23 +32,17 @@ existing SQLite database file (or automatically create it on first run) and then
 $loop = React\EventLoop\Factory::create();
 $factory = new Clue\React\SQLite\Factory($loop);
 
+$db = $factory->openLazy('users.db');
+$db->exec('CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
+
 $name = 'Alice';
-$factory->open('users.db')->then(
-    function (Clue\React\SQLite\DatabaseInterface $db) use ($name) {
-        $db->exec('CREATE TABLE IF NOT EXISTS foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
-
-        $db->query('INSERT INTO foo (bar) VALUES (?)', array($name))->then(
-            function (Clue\React\SQLite\Result $result) use ($name) {
-                echo 'New ID for ' . $name . ': ' . $result->insertId . PHP_EOL;
-            }
-        );
-
-        $db->quit();
-    },
-    function (Exception $e) {
-        echo 'Error: ' . $e->getMessage() . PHP_EOL;
+$db->query('INSERT INTO foo (bar) VALUES (?)', [$name])->then(
+    function (Clue\React\SQLite\Result $result) use ($name) {
+        echo 'New ID for ' . $name . ': ' . $result->insertId . PHP_EOL;
     }
 );
+
+$db->quit();
 
 $loop->run();
 ```
@@ -101,6 +96,75 @@ $factory->open('users.db', SQLITE3_OPEN_READONLY)->then(function (DatabaseInterf
 });
 ```
 
+#### openLazy()
+
+The `openLazy(string $filename, int $flags = null, array $options = []): DatabaseInterface` method can be used to
+open a new database connection for the given SQLite database file.
+
+```php
+$db = $factory->openLazy('users.db');
+
+$db->query('INSERT INTO users (name) VALUES ("test")');
+$db->quit();
+```
+
+This method immediately returns a "virtual" connection implementing the
+[`DatabaseInterface`](#databaseinterface) that can be used to
+interface with your SQLite database. Internally, it lazily creates the
+underlying database process only on demand once the first request is
+invoked on this instance and will queue all outstanding requests until
+the underlying database is ready. Additionally, it will only keep this
+underlying database in an "idle" state for 60s by default and will
+automatically end the underlying database when it is no longer needed.
+
+From a consumer side this means that you can start sending queries to the
+database right away while the underlying database process may still be
+outstanding. Because creating this underlying process may take some
+time, it will enqueue all oustanding commands and will ensure that all
+commands will be executed in correct order once the database is ready.
+In other words, this "virtual" database behaves just like a "real"
+database as described in the `DatabaseInterface` and frees you from
+having to deal with its async resolution.
+
+If the underlying database process fails, it will reject all
+outstanding commands and will return to the initial "idle" state. This
+means that you can keep sending additional commands at a later time which
+will again try to open a new underlying database. Note that this may
+require special care if you're using transactions that are kept open for
+longer than the idle period.
+
+Note that creating the underlying database will be deferred until the
+first request is invoked. Accordingly, any eventual connection issues
+will be detected once this instance is first used. You can use the
+`quit()` method to ensure that the "virtual" connection will be soft-closed
+and no further commands can be enqueued. Similarly, calling `quit()` on
+this instance when not currently connected will succeed immediately and
+will not have to wait for an actual underlying connection.
+
+Depending on your particular use case, you may prefer this method or the
+underlying `open()` method which resolves with a promise. For many
+simple use cases it may be easier to create a lazy connection.
+
+The optional `$flags` parameter is used to determine how to open the
+SQLite database. By default, open uses `SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE`.
+
+```php
+$db = $factory->openLazy('users.db', SQLITE3_OPEN_READONLY);
+```
+
+By default, this method will keep "idle" connection open for 60s and will
+then end the underlying connection. The next request after an "idle"
+connection ended will automatically create a new underlying connection.
+This ensure you always get a "fresh" connection and as such should not be
+confused with a "keepalive" or "heartbeat" mechanism, as this will not
+actively try to probe the connection. You can explicitly pass a custom
+idle timeout value in seconds (or use a negative number to not apply a
+timeout) like this:
+
+```php
+$db = $factory->openLazy('users.db', null, ['idle' => 0.1]);
+```
+
 ### DatabaseInterface
 
 The `DatabaseInterface` represents a connection that is responsible for
@@ -149,7 +213,7 @@ method instead.
 
 #### query()
 
-The `query(string $query, array $params = array()): PromiseInterface<Result>` method can be used to
+The `query(string $query, array $params = []): PromiseInterface<Result>` method can be used to
 perform an async query.
 
 
