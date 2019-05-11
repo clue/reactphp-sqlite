@@ -84,6 +84,17 @@ $factory->open('users.db')->then(function (DatabaseInterface $db) {
 });
 ```
 
+The `$filename` parameter is the path to the SQLite database file or
+`:memory:` to create a temporary in-memory database. As of PHP 7.0.10, an
+empty string can be given to create a private, temporary on-disk database.
+Relative paths will be resolved relative to the current working directory,
+so it's usually recommended to pass absolute paths instead to avoid any
+ambiguity.
+
+```php
+$promise = $factory->open(__DIR__ . '/users.db');
+```
+
 The optional `$flags` parameter is used to determine how to open the
 SQLite database. By default, open uses `SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE`.
 
@@ -144,6 +155,17 @@ will not have to wait for an actual underlying connection.
 Depending on your particular use case, you may prefer this method or the
 underlying `open()` method which resolves with a promise. For many
 simple use cases it may be easier to create a lazy connection.
+
+The `$filename` parameter is the path to the SQLite database file or
+`:memory:` to create a temporary in-memory database. As of PHP 7.0.10, an
+empty string can be given to create a private, temporary on-disk database.
+Relative paths will be resolved relative to the current working directory,
+so it's usually recommended to pass absolute paths instead to avoid any
+ambiguity.
+
+```php
+$$db = $factory->openLazy(__DIR__ . '/users.db');
+```
 
 The optional `$flags` parameter is used to determine how to open the
 SQLite database. By default, open uses `SQLITE3_OPEN_READWRITE | SQLITE3_OPEN_CREATE`.
