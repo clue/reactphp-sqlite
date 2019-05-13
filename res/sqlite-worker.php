@@ -132,34 +132,38 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
         if ($data->params[1] === []) {
             $result = @$db->query($data->params[0]);
         } else {
-            $statement = $db->prepare($data->params[0]);
-            foreach ($data->params[1] as $index => $value) {
-                if ($value === null) {
-                    $type = \SQLITE3_NULL;
-                } elseif ($value === true || $value === false) {
-                    // explicitly cast bool to int because SQLite does not have a native boolean
-                    $type = \SQLITE3_INTEGER;
-                    $value = (int)$value;
-                } elseif (\is_int($value)) {
-                    $type = \SQLITE3_INTEGER;
-                } elseif (isset($value->float)) {
-                    $type = \SQLITE3_FLOAT;
-                    $value = (float)$value->float;
-                } elseif (isset($value->base64)) {
-                    // base64-decode string parameters as BLOB
-                    $type = \SQLITE3_BLOB;
-                    $value = \base64_decode($value->base64);
-                } else {
-                    $type = \SQLITE3_TEXT;
-                }
+            $statement = @$db->prepare($data->params[0]);
+            if ($statement === false) {
+                $result = false;
+            } else {
+                foreach ($data->params[1] as $index => $value) {
+                    if ($value === null) {
+                        $type = \SQLITE3_NULL;
+                    } elseif ($value === true || $value === false) {
+                        // explicitly cast bool to int because SQLite does not have a native boolean
+                        $type = \SQLITE3_INTEGER;
+                        $value = (int)$value;
+                    } elseif (\is_int($value)) {
+                        $type = \SQLITE3_INTEGER;
+                    } elseif (isset($value->float)) {
+                        $type = \SQLITE3_FLOAT;
+                        $value = (float)$value->float;
+                    } elseif (isset($value->base64)) {
+                        // base64-decode string parameters as BLOB
+                        $type = \SQLITE3_BLOB;
+                        $value = \base64_decode($value->base64);
+                    } else {
+                        $type = \SQLITE3_TEXT;
+                    }
 
-                $statement->bindValue(
-                    \is_int($index) ? $index + 1 : $index,
-                    $value,
-                    $type
-                );
+                    $statement->bindValue(
+                        \is_int($index) ? $index + 1 : $index,
+                        $value,
+                        $type
+                    );
+                }
+                $result = @$statement->execute();
             }
-            $result = @$statement->execute();
         }
 
         if ($result === false) {
