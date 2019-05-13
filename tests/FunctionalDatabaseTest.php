@@ -292,6 +292,64 @@ class FunctionalDatabaseTest extends TestCase
         $this->assertSame(array(array('value' => 'hellö')), $data);
     }
 
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryInvalidTableRejectsWithExceptionAndRunsUntilQuit($flag)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data){
+            $db->query('SELECT 1 FROM foo')->then('var_dump', function (Exception $e) use (&$data) {
+                $data = $e->getMessage();
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame('no such table: foo', $data);
+    }
+
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQueryInvalidTableWithPlaceholderRejectsWithExceptionAndRunsUntilQuit($flag)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data){
+            $db->query('SELECT ? FROM foo', [1])->then('var_dump', function (Exception $e) use (&$data) {
+                $data = $e->getMessage();
+            });
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertSame('no such table: foo', $data);
+    }
+
     public function provideSqlDataWillBeReturnedWithType()
     {
         return array_merge(

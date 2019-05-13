@@ -211,11 +211,11 @@ class Factory
         }
         // @codeCoverageIgnoreEnd
 
-        // launch process with default STDIO pipes
+        // launch process with default STDIO pipes, but inherit STDERR
         $pipes = array(
             array('pipe', 'r'),
             array('pipe', 'w'),
-            array('pipe', 'w')
+            \defined('STDERR') ? \STDERR : \fopen('php://stderr', 'w')
         );
 
         // do not inherit open FDs by explicitly overwriting existing FDs with dummy files
@@ -253,7 +253,7 @@ class Factory
     {
         $command = \escapeshellarg($this->bin) . ' sqlite-worker.php';
 
-        // launch process without default STDIO pipes
+        // launch process without default STDIO pipes, but inherit STDERR
         $null = \DIRECTORY_SEPARATOR === '\\' ? 'nul' : '/dev/null';
         $pipes = array(
             array('file', $null, 'r'),
