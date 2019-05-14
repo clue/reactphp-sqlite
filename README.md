@@ -3,21 +3,42 @@
 Async SQLite database, lightweight non-blocking process wrapper around file-based database extension (`ext-sqlite3`),
 built on top of [ReactPHP](https://reactphp.org/).
 
+[SQLite](https://www.sqlite.org/) is a widespread and efficient in-process database.
+It offers a common SQL interface to process queries to work with its relational data
+in memory or persist to a simple, portable database file.
+Its lightweight design makes it an ideal candidate for an embedded database in
+portable (CLI) applications, test environments and much more.
+This library provides you a simple API to work with your SQLite database from within PHP.
+Because working with SQLite and the underlying filesystem is inherently blocking,
+this project is built as a lightweight non-blocking process wrapper around it,
+so you can query your data without blocking your main application.
+
+* **Async execution of queries** -
+  Send any number of queries (SQL) to SQLite in parallel (automatic queue) and
+  process their responses as soon as results come in.
+  The Promise-based design provides a *sane* interface to working with async results.
+* **Lightweight, SOLID design** -
+  Provides a thin abstraction that is [*just good enough*](https://en.wikipedia.org/wiki/Principle_of_good_enough)
+  and does not get in your way.
+  Future or custom commands and events require no changes to be supported.
+* **Good test coverage** -
+  Comes with an automated tests suite and is regularly tested against actual SQLite databases in the wild.
+
 **Table of contents**
 
 * [Quickstart example](#quickstart-example)
 * [Usage](#usage)
-  * [Factory](#factory)
-    * [open()](#open)
-    * [openLazy()](#openlazy)
-  * [DatabaseInterface](#databaseinterface)
-    * [exec()](#exec)
-    * [query()](#query)
-    * [quit()](#quit)
-    * [close()](#close)
-    * [Events](#events)
-      * [error event](#error-event)
-      * [close event](#close-event)
+    * [Factory](#factory)
+        * [open()](#open)
+        * [openLazy()](#openlazy)
+    * [DatabaseInterface](#databaseinterface)
+        * [exec()](#exec)
+        * [query()](#query)
+        * [quit()](#quit)
+        * [close()](#close)
+        * [Events](#events)
+            * [error event](#error-event)
+            * [close event](#close-event)
 * [Install](#install)
 * [Tests](#tests)
 * [License](#license)
@@ -367,11 +388,14 @@ See also the [`close()`](#close) method.
 The recommended way to install this library is [through Composer](https://getcomposer.org).
 [New to Composer?](https://getcomposer.org/doc/00-intro.md)
 
+This project follows [SemVer](https://semver.org/).
 This will install the latest supported version:
 
 ```bash
-$ composer require clue/reactphp-sqlite:dev-master
+$ composer require clue/reactphp-sqlite:^1.0
 ```
+
+See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 
 This project aims to run on any platform and thus only requires `ext-sqlite3` and
 supports running on legacy PHP 5.4 through current PHP 7+.
