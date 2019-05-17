@@ -658,7 +658,7 @@ class FunctionalDatabaseTest extends TestCase
      * @dataProvider provideSocketFlags
      * @param bool $flag
      */
-    public function testQueryInsertResolvesWithResultWithLastInsertIdAndRunsUntilQuit($flag)
+    public function testQueryInsertResolvesWithEmptyResultSetWithLastInsertIdAndRunsUntilQuit($flag)
     {
         $loop = React\EventLoop\Factory::create();
         $factory = new Factory($loop);
@@ -673,15 +673,50 @@ class FunctionalDatabaseTest extends TestCase
         $promise->then(function (DatabaseInterface $db) use (&$data){
             $db->exec('CREATE TABLE foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
             $db->query('INSERT INTO foo (bar) VALUES (?)', ['test'])->then(function (Result $result) use (&$data) {
-                $data = $result->insertId;
-            });
+                $data = $result;
+            }, 'printf');
 
             $db->quit();
         });
 
         $loop->run();
 
-        $this->assertSame(1, $data);
+        $this->assertInstanceOf('Clue\React\SQLite\Result', $data);
+        $this->assertSame(1, $data->insertId);
+        $this->assertNull($data->columns);
+        $this->assertNull($data->rows);
+    }
+
+    /**
+     * @dataProvider provideSocketFlags
+     * @param bool $flag
+     */
+    public function testQuerySelectEmptyResolvesWithEmptyResultSetWithColumnsAndNoRowsAndRunsUntilQuit($flag)
+    {
+        $loop = React\EventLoop\Factory::create();
+        $factory = new Factory($loop);
+
+        $ref = new ReflectionProperty($factory, 'useSocket');
+        $ref->setAccessible(true);
+        $ref->setValue($factory, $flag);
+
+        $promise = $factory->open(':memory:');
+
+        $data = null;
+        $promise->then(function (DatabaseInterface $db) use (&$data){
+            $db->exec('CREATE TABLE foo (id INTEGER PRIMARY KEY AUTOINCREMENT, bar STRING)');
+            $db->query('SELECT * FROM foo LIMIT 0')->then(function (Result $result) use (&$data) {
+                $data = $result;
+            }, 'printf');
+
+            $db->quit();
+        });
+
+        $loop->run();
+
+        $this->assertInstanceOf('Clue\React\SQLite\Result', $data);
+        $this->assertSame(['id', 'bar'], $data->columns);
+        $this->assertSame([], $data->rows);
     }
 
     protected function expectCallableNever()

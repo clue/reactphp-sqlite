@@ -90,18 +90,19 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
             $result->changed = $data['changed'];
             $result->insertId = $data['insertId'];
             $result->columns = $data['columns'];
+            $result->rows = $data['rows'];
 
             // base64-decode string result values for BLOBS
-            $result->rows = [];
-            foreach ($data['rows'] as $row) {
-                foreach ($row as &$value) {
-                    if (isset($value['base64'])) {
-                        $value = \base64_decode($value['base64']);
-                    } elseif (isset($value['float'])) {
-                        $value = (float)$value['float'];
+            if ($result->rows !== null) {
+                foreach ($result->rows as &$row) {
+                    foreach ($row as &$value) {
+                        if (isset($value['base64'])) {
+                            $value = \base64_decode($value['base64']);
+                        } elseif (isset($value['float'])) {
+                            $value = (float)$value['float'];
+                        }
                     }
                 }
-                $result->rows[] = $row;
             }
 
             return $result;
