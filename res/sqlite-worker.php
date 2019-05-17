@@ -172,16 +172,15 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                 'error' => array('message' => $db->lastErrorMsg())
             ));
         } else {
-            $columns = array();
-            for ($i = 0, $n = $result->numColumns(); $i < $n; ++$i) {
-                $columns[] = $result->columnName($i);
-            }
-
-            $rows = array();
             if ($result->numColumns() !== 0) {
                 // Fetch all rows only if this result set has any columns.
                 // INSERT/UPDATE/DELETE etc. do not return any columns, trying
                 // to fetch the results here will issue the same query again.
+                $rows = $columns = [];
+                for ($i = 0, $n = $result->numColumns(); $i < $n; ++$i) {
+                    $columns[] = $result->columnName($i);
+                }
+
                 while (($row = $result->fetchArray(\SQLITE3_ASSOC)) !== false) {
                     // base64-encode any string that is not valid UTF-8 without control characters (BLOB)
                     foreach ($row as &$value) {
@@ -193,6 +192,8 @@ $in->on('data', function ($data) use (&$db, $in, $out) {
                     }
                     $rows[] = $row;
                 }
+            } else {
+                $rows = $columns = null;
             }
             $result->finalize();
 
