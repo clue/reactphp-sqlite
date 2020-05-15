@@ -1,5 +1,7 @@
 <?php
 
+namespace Clue\Tests\React\SQLite;
+
 use PHPUnit\Framework\TestCase;
 use Clue\React\SQLite\Factory;
 
@@ -22,7 +24,7 @@ class FactoryTest extends TestCase
 
         $db = $factory->openLazy(':memory:', null, ['idle' => 10.0]);
 
-        $ref = new ReflectionProperty($db, 'idlePeriod');
+        $ref = new \ReflectionProperty($db, 'idlePeriod');
         $ref->setAccessible(true);
         $value = $ref->getValue($db);
 
@@ -36,7 +38,7 @@ class FactoryTest extends TestCase
 
         $db = $factory->openLazy(__DIR__ . '/users.db');
 
-        $ref = new ReflectionProperty($db, 'filename');
+        $ref = new \ReflectionProperty($db, 'filename');
         $ref->setAccessible(true);
         $value = $ref->getValue($db);
 
@@ -50,7 +52,7 @@ class FactoryTest extends TestCase
 
         $db = $factory->openLazy(':memory:');
 
-        $ref = new ReflectionProperty($db, 'filename');
+        $ref = new \ReflectionProperty($db, 'filename');
         $ref->setAccessible(true);
         $value = $ref->getValue($db);
 
@@ -64,7 +66,7 @@ class FactoryTest extends TestCase
 
         $db = $factory->openLazy('');
 
-        $ref = new ReflectionProperty($db, 'filename');
+        $ref = new \ReflectionProperty($db, 'filename');
         $ref->setAccessible(true);
         $value = $ref->getValue($db);
 
@@ -85,7 +87,7 @@ class FactoryTest extends TestCase
 
         chdir('../');
 
-        $ref = new ReflectionProperty($db, 'filename');
+        $ref = new \ReflectionProperty($db, 'filename');
         $ref->setAccessible(true);
         $value = $ref->getValue($db);
 
