@@ -13,6 +13,9 @@
     "autoload": {
         "psr-4": { "Clue\\React\\SQLite\\": "src/" }
     },
+    "autoload-dev": {
+        "psr-4": { "Clue\\Tests\\React\\SQLite\\": "tests/" }
+    },
     "require": {
         "php": ">=5.4",
         "ext-sqlite3": "*",
