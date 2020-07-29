@@ -14,6 +14,8 @@ class Factory
     private $loop;
     private $bin = PHP_BINARY;
     private $useSocket;
+    private $workerScript;
+    private $workerCwd;
 
     /**
      * The `Factory` is responsible for opening your [`DatabaseInterface`](#databaseinterface) instance.
@@ -25,10 +27,14 @@ class Factory
      * ```
      *
      * @param LoopInterface $loop
+     * @param string $workerScript
+     * @param string $cwd
      */
-    public function __construct(LoopInterface $loop)
+    public function __construct(LoopInterface $loop, $workerScript = 'sqlite-worker.php', $cwd = __DIR__ . '/../res')
     {
         $this->loop = $loop;
+        $this->workerScript = $workerScript;
+        $this->workerCwd = $cwd;
 
         // use socket I/O for Windows only, use faster process pipes everywhere else
         $this->useSocket = DIRECTORY_SEPARATOR === '\\';
@@ -190,7 +196,7 @@ class Factory
 
     private function openProcessIo($filename, $flags = null)
     {
-        $command = 'exec ' . \escapeshellarg($this->bin) . ' sqlite-worker.php';
+        $command = 'exec ' . \escapeshellarg($this->bin) . ' ' . $this->workerScript;
 
         // Try to get list of all open FDs (Linux/Mac and others)
         $fds = @\scandir('/dev/fd');
@@ -232,7 +238,7 @@ class Factory
             $command = 'exec bash -c ' . \escapeshellarg($command);
         }
 
-        $process = new Process($command, __DIR__ . '/../res', null, $pipes);
+        $process = new Process($command, $this->workerCwd, null, $pipes);
         $process->start($this->loop);
 
         $db = new ProcessIoDatabase($process);
@@ -251,7 +257,7 @@ class Factory
 
     private function openSocketIo($filename, $flags = null)
     {
-        $command = \escapeshellarg($this->bin) . ' sqlite-worker.php';
+        $command = \escapeshellarg($this->bin) . ' ' . $this->workerScript;
 
         // launch process without default STDIO pipes, but inherit STDERR
         $null = \DIRECTORY_SEPARATOR === '\\' ? 'nul' : '/dev/null';
@@ -273,7 +279,7 @@ class Factory
         stream_set_blocking($server, false);
         $command .= ' ' . stream_socket_get_name($server, false);
 
-        $process = new Process($command, __DIR__ . '/../res', null, $pipes);
+        $process = new Process($command, $this->workerCwd, null, $pipes);
         $process->start($this->loop);
 
         $deferred = new Deferred(function () use ($process, $server) {
@@ -348,7 +354,7 @@ class Factory
      */
     private function resolve($filename)
     {
-        if ($filename !== '' && $filename !== ':memory:' && !\preg_match('/^\/|\w+\:\\\\/', $filename)) {
+        if ($filename !== '' && $filename !== ':memory:' && !\preg_match('/^\/|\w+:/', $filename)) {
             $filename = \getcwd() . \DIRECTORY_SEPARATOR . $filename;
         }
         return $filename;
