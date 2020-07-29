@@ -14,8 +14,8 @@ class Factory
     private $loop;
     private $bin = PHP_BINARY;
     private $useSocket;
-    private $workerScript;
-    private $workerCwd;
+    private $workerScript = 'sqlite-worker.php';
+    private $workerCwd = __DIR__ . '/../res';
 
     /**
      * The `Factory` is responsible for opening your [`DatabaseInterface`](#databaseinterface) instance.
@@ -30,11 +30,11 @@ class Factory
      * @param string $workerScript
      * @param string $cwd
      */
-    public function __construct(LoopInterface $loop, $workerScript = 'sqlite-worker.php', $cwd = __DIR__ . '/../res')
+    public function __construct(LoopInterface $loop, $workerScript = null, $cwd = null)
     {
         $this->loop = $loop;
-        $this->workerScript = $workerScript;
-        $this->workerCwd = $cwd;
+        $this->workerScript = $workerScript ?: $this->workerScript;
+        $this->workerCwd = $cwd ?: $this->workerCwd;
 
         // use socket I/O for Windows only, use faster process pipes everywhere else
         $this->useSocket = DIRECTORY_SEPARATOR === '\\';
