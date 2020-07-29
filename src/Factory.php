@@ -15,7 +15,7 @@ class Factory
     private $bin = PHP_BINARY;
     private $useSocket;
     private $workerScript = 'sqlite-worker.php';
-    private $workerCwd = __DIR__ . '/../res';
+    private $workerCwd;
 
     /**
      * The `Factory` is responsible for opening your [`DatabaseInterface`](#databaseinterface) instance.
@@ -34,7 +34,7 @@ class Factory
     {
         $this->loop = $loop;
         $this->workerScript = $workerScript ?: $this->workerScript;
-        $this->workerCwd = $cwd ?: $this->workerCwd;
+        $this->workerCwd = $cwd ?: __DIR__ . '/../res';
 
         // use socket I/O for Windows only, use faster process pipes everywhere else
         $this->useSocket = DIRECTORY_SEPARATOR === '\\';
