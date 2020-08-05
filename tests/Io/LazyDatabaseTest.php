@@ -13,7 +13,10 @@ class LazyDatabaseTest extends TestCase
     private $loop;
     private $db;
 
-    public function setUp()
+    /**
+     * @before
+     */
+    public function setUpDataBase()
     {
         $this->factory = $this->getMockBuilder('Clue\React\SQLite\Factory')->disableOriginalConstructor()->getMock();
         $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
