@@ -400,7 +400,7 @@ $ composer require clue/reactphp-sqlite:^1.0.1
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 
 This project aims to run on any platform and thus only requires `ext-sqlite3` and
-supports running on legacy PHP 5.4 through current PHP 7+.
+supports running on legacy PHP 5.4 through current PHP 8+.
 It's *highly recommended to use PHP 7+* for this project.
 
 This project is implemented as a lightweight process wrapper around the `ext-sqlite3`
