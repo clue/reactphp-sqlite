@@ -1,6 +1,7 @@
 # clue/reactphp-sqlite
 
 [![CI status](https://github.com/clue/reactphp-sqlite/workflows/CI/badge.svg)](https://github.com/clue/reactphp-sqlite/actions)
+[![installs on Packagist](https://img.shields.io/packagist/dt/clue/reactphp-sqlite?color=blue&label=installs%20on%20Packagist)](https://packagist.org/packages/clue/reactphp-sqlite)
 
 Async SQLite database, lightweight non-blocking process wrapper around file-based database extension (`ext-sqlite3`),
 built on top of [ReactPHP](https://reactphp.org/).
