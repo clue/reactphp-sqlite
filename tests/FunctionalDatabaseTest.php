@@ -12,7 +12,7 @@ class FunctionalDatabaseTest extends TestCase
 {
     public function provideSocketFlag()
     {
-        if (DIRECTORY_SEPARATOR === '\\') {
+        if (DIRECTORY_SEPARATOR === '\\' && PHP_VERSION_ID < 80000) {
             return [[true]];
         } else {
             return [[false], [true]];
@@ -34,7 +34,7 @@ class FunctionalDatabaseTest extends TestCase
                 null,
                 true
             ]
-        ], DIRECTORY_SEPARATOR === '\\' ? [] : [
+        ], DIRECTORY_SEPARATOR === '\\' && PHP_VERSION_ID < 80000 ? [] : [
             [
                 null,
                 false

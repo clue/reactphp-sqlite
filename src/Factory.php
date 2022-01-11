@@ -67,8 +67,8 @@ class Factory
         $this->loop = $loop ?: Loop::get();
         $this->bin = $binary === null ? $this->php() : $binary;
 
-        // use socket I/O for Windows only, use faster process pipes everywhere else
-        $this->useSocket = \DIRECTORY_SEPARATOR === '\\';
+        // use socket I/O for Windows on PHP < 8.0 only, use faster process pipes everywhere else
+        $this->useSocket = \DIRECTORY_SEPARATOR === '\\' && \PHP_VERSION_ID < 80000;
     }
 
     /**
@@ -235,7 +235,11 @@ class Factory
             $cwd = __DIR__ . '/../res';
             $worker = \basename($worker);
         }
-        $command = 'exec ' . \escapeshellarg($this->bin) . ' ' . escapeshellarg($worker);
+
+        $command = \escapeshellarg($this->bin) . ' ' . escapeshellarg($worker);
+        if (\DIRECTORY_SEPARATOR !== '\\') {
+            $command = 'exec ' . $command;
+        }
 
         // Try to get list of all open FDs (Linux/Mac and others)
         $fds = @\scandir('/dev/fd');
@@ -246,7 +250,7 @@ class Factory
         // @codeCoverageIgnoreStart
         if ($fds === false) {
             $fds = array();
-            for ($i = 0; $i <= 1024; ++$i) {
+            for ($i = 0; $i <= 1024 && \DIRECTORY_SEPARATOR !== '\\'; ++$i) {
                 $copy = @\fopen('php://fd/' . $i, 'r');
                 if ($copy !== false) {
                     $fds[] = $i;
@@ -256,10 +260,10 @@ class Factory
         }
         // @codeCoverageIgnoreEnd
 
-        // launch process with default STDIO pipes, but inherit STDERR
+        // launch process with default STDIO pipes (or sockets on Windows with PHP 8+), but inherit STDERR
         $pipes = array(
-            array('pipe', 'r'),
-            array('pipe', 'w'),
+            \DIRECTORY_SEPARATOR === '\\' ? array('socket') : array('pipe', 'r'),
+            \DIRECTORY_SEPARATOR === '\\' ? array('socket') : array('pipe', 'w'),
             \defined('STDERR') ? \STDERR : \fopen('php://stderr', 'w')
         );
 
