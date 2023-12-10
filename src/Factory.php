@@ -159,7 +159,7 @@ class Factory
      * From a consumer side this means that you can start sending queries to the
      * database right away while the underlying database process may still be
      * outstanding. Because creating this underlying process may take some
-     * time, it will enqueue all oustanding commands and will ensure that all
+     * time, it will enqueue all outstanding commands and will ensure that all
      * commands will be executed in correct order once the database is ready.
      * In other words, this "virtual" database behaves just like a "real"
      * database as described in the `DatabaseInterface` and frees you from

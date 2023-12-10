@@ -32,7 +32,7 @@ use React\Promise\PromiseInterface;
  *     The `close` event will be emitted once the connection closes (terminates).
  *
  *     ```php
- *     $connecion->on('close', function () {
+ *     $connection->on('close', function () {
  *         echo 'Connection closed' . PHP_EOL;
  *     });
  *     ```
@@ -173,7 +173,7 @@ interface DatabaseInterface extends EventEmitterInterface
      * Force-close the connection.
      *
      * Unlike the `quit()` method, this method will immediately force-close the
-     * connection and reject all oustanding commands.
+     * connection and reject all outstanding commands.
      *
      * ```php
      * $db->close();
