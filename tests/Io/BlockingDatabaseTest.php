@@ -9,8 +9,10 @@ class BlockingDatabaseTest extends TestCase
     public function testCtorThrowsForInvalidPath()
     {
         if (method_exists($this, 'expectException')) {
+            // PHPUnit 5.2+
             $this->expectException('Exception');
         } else {
+            // legacy PHPUnit
             $this->setExpectedException('Exception');
         }
         new BlockingDatabase('/dev/foobar');
