@@ -167,7 +167,9 @@ class LazyDatabaseTest extends TestCase
             new Promise(function () { })
         );
 
-        $this->db->exec('CREATE');
+        $promise = $this->db->exec('CREATE');
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
+
         $deferred->reject($error);
 
         $this->db->exec('CREATE');
@@ -392,9 +394,11 @@ class LazyDatabaseTest extends TestCase
         $this->factory->expects($this->exactly(2))->method('open')->willReturnOnConsecutiveCalls(
             $deferred->promise(),
             new Promise(function () { })
-            );
+        );
 
-        $this->db->query('CREATE');
+        $promise = $this->db->query('CREATE');
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
+
         $deferred->reject($error);
 
         $this->db->query('CREATE');
@@ -408,7 +412,7 @@ class LazyDatabaseTest extends TestCase
         $this->factory->expects($this->exactly(2))->method('open')->willReturnOnConsecutiveCalls(
             \React\Promise\resolve($client),
             new Promise(function () { })
-            );
+        );
 
         $this->db->query('CREATE');
         $client->emit('close');
@@ -433,7 +437,7 @@ class LazyDatabaseTest extends TestCase
         $client->expects($this->exactly(2))->method('query')->willReturnOnConsecutiveCalls(
             $deferred->promise(),
             new Promise(function () { })
-            );
+        );
 
         $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
 
@@ -451,7 +455,7 @@ class LazyDatabaseTest extends TestCase
         $client->expects($this->exactly(2))->method('query')->willReturnOnConsecutiveCalls(
             $deferred->promise(),
             new Promise(function () { })
-            );
+        );
 
         $this->factory->expects($this->once())->method('open')->willReturn(\React\Promise\resolve($client));
 
@@ -524,7 +528,9 @@ class LazyDatabaseTest extends TestCase
         $this->db->on('error', $this->expectCallableNever());
         $this->db->on('close', $this->expectCallableOnce());
 
-        $this->db->exec('CREATE');
+        $promise = $this->db->exec('CREATE');
+        $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
+
         $this->db->close();
     }
 

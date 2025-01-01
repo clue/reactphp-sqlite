@@ -145,6 +145,8 @@ class LazyDatabase extends EventEmitter implements DatabaseInterface
         if ($this->promise !== null) {
             $this->promise->then(function (DatabaseInterface $db) {
                 $db->close();
+            }, function () {
+                // ignore to avoid reporting unhandled rejection
             });
             if ($this->promise !== null) {
                 $this->promise->cancel();
