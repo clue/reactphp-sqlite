@@ -115,7 +115,11 @@ class ProcessIoDatabase extends EventEmitter implements DatabaseInterface
         $promise = $this->send('close', array());
 
         if ($this->process->stdin === $this->process->stdout) {
-            $promise->then(function () { $this->process->stdin->close(); });
+            $promise->then(function () {
+                $this->process->stdin->close();
+            }, function () {
+                // ignore to avoid reporting unhandled rejection
+            });
         } else {
             $this->process->stdin->end();
         }
