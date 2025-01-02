@@ -15,7 +15,7 @@ class BlockingDatabaseTest extends TestCase
             // legacy PHPUnit
             $this->setExpectedException('Exception');
         }
-        new BlockingDatabase('/dev/foobar');
+        new BlockingDatabase('/dev/foo/bar');
     }
 
     public function testExecReturnsRejectedPromiseForInvalidQuery()

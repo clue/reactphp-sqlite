@@ -52,7 +52,7 @@ class FunctionalFactoryTest extends TestCase
     public function testOpenReturnsPromiseWhichRejectsWithExceptionWhenPathIsInvalid()
     {
         $factory = new Factory();
-        $promise = $factory->open('/dev/foobar');
+        $promise = $factory->open('/dev/foo/bar');
 
         $promise->then(function (DatabaseInterface $db) {
             echo 'open.';
