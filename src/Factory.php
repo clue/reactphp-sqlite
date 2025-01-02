@@ -62,8 +62,12 @@ class Factory
      * @param ?LoopInterface $loop
      * @param ?string $binary
      */
-    public function __construct(LoopInterface $loop = null, $binary = null)
+    public function __construct($loop = null, $binary = null)
     {
+        if ($loop !== null && !$loop instanceof LoopInterface) { // manual type check to support legacy PHP < 7.1
+            throw new \InvalidArgumentException('Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        }
+
         $this->loop = $loop ?: Loop::get();
         $this->bin = $binary === null ? $this->php() : $binary;
 

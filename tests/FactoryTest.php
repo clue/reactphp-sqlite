@@ -32,6 +32,20 @@ class FactoryTest extends TestCase
         $this->assertSame('php6.0', $ref->getValue($factory));
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        if (method_exists($this, 'expectException')) {
+            // PHPUnit 5.2+
+            $this->expectException('InvalidArgumentException');
+            $this->expectExceptionMessage('Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        } else {
+            // legacy PHPUnit
+            $this->setExpectedException('InvalidArgumentException', 'Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        }
+
+        new Factory('loop');
+    }
+
     public function testLoadLazyReturnsDatabaseImmediately()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
