@@ -11,9 +11,11 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04
+          - ubuntu-24.04
           - windows-2022
         php:
+          - 8.4
+          - 8.3
           - 8.2
           - 8.1
           - 8.0
@@ -36,8 +38,8 @@ jobs:
           extensions: sqlite3
           coverage: xdebug
           ini-file: development
-          # disable JIT on PHP 8.2 with Xdebug: JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled.
-          ini-values: ${{ matrix.php == 8.2 && 'opcache.jit_buffer_size=0' || '' }}
+          # disable JIT on PHP 8.2+ with Xdebug: JIT is incompatible with third party extensions that override zend_execute_ex(). JIT disabled.
+          ini-values: ${{ matrix.php >= 8.2 && 'opcache.jit_buffer_size=0' || '' }}
       - run: composer install
       - run: vendor/bin/phpunit --coverage-text --coverage-clover=clover.xml
         if: ${{ matrix.php >= 7.3 }}
