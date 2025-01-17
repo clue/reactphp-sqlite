@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.0 (2025-01-17)
+
+*   Feature: Improve PHP 8.4+ support by avoiding implicitly nullable types.
+    (#72 and #73 by @clue)
+
+*   Feature / Fix: Update close handler to avoid unhandled promise rejections.
+    (#71 by @clue)
+
+*   Minor documentation improvements.
+    (#68 by @yadaiio)
+
 ## 1.6.0 (2023-05-12)
 
 *   Feature: Forward compatibility with upcoming Promise v3.
