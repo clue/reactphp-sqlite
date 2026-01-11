@@ -12,8 +12,9 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
-          - windows-2022
+          - windows-2025
         php:
+          - 8.5
           - 8.4
           - 8.3
           - 8.2
@@ -28,7 +29,7 @@ jobs:
           - 5.5
           - 5.4
         exclude: # ignore flaky results for legacy PHP on Windows
-          - os: windows-2022
+          - os: windows-2025
             php: 5.4
     steps:
       - uses: actions/checkout@v3
@@ -46,7 +47,7 @@ jobs:
       - run: vendor/bin/phpunit --coverage-text --coverage-clover=clover.xml -c phpunit.xml.legacy
         if: ${{ matrix.php < 7.3 }}
       - name: Check 100% code coverage
-        if: ${{ matrix.os != 'windows-2022' }}
+        if: ${{ matrix.os != 'windows-2025' }}
         shell: php {0}
         run: |
           <?php

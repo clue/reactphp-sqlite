@@ -53,7 +53,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -81,7 +83,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -149,7 +153,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -174,7 +180,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -199,7 +207,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -224,7 +234,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -254,7 +266,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -283,7 +297,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -309,7 +325,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -340,7 +358,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -371,7 +391,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -402,7 +424,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -604,7 +628,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -629,7 +655,9 @@ class FunctionalDatabaseTest extends TestCase
         $factory = new Factory();
 
         $ref = new \ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($factory, $useSocket);
 
         $promise = $factory->open(':memory:');
@@ -655,7 +683,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -686,7 +716,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -713,7 +745,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -739,7 +773,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -774,7 +810,9 @@ class FunctionalDatabaseTest extends TestCase
 
         if ($useSocket !== null) {
             $ref = new \ReflectionProperty($factory, 'useSocket');
-            $ref->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $ref->setAccessible(true);
+            }
             $ref->setValue($factory, $useSocket);
         }
 
@@ -802,7 +840,9 @@ class FunctionalDatabaseTest extends TestCase
         $factory = new Factory();
 
         $ref = new \ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($factory, true);
 
         $promise = $factory->open(':memory:');
@@ -830,7 +870,9 @@ class FunctionalDatabaseTest extends TestCase
         $factory = new Factory($loop);
 
         $ref = new \ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($factory, true);
 
         $promise = $factory->open(':memory:');

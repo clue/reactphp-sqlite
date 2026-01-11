@@ -72,7 +72,9 @@ class FunctionalFactoryTest extends TestCase
         $factory = new Factory(null, 'echo');
 
         $ref = new \ReflectionProperty($factory, 'useSocket');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($factory, true);
 
         $promise = $factory->open(':memory:');
