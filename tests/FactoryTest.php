@@ -12,7 +12,9 @@ class FactoryTest extends TestCase
         $factory = new Factory();
 
         $ref = new \ReflectionProperty($factory, 'loop');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $loop = $ref->getValue($factory);
 
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
@@ -24,11 +26,15 @@ class FactoryTest extends TestCase
         $factory = new Factory($loop, 'php6.0');
 
         $ref = new \ReflectionProperty($factory, 'loop');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $this->assertSame($loop, $ref->getValue($factory));
 
         $ref = new \ReflectionProperty($factory, 'bin');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $this->assertSame('php6.0', $ref->getValue($factory));
     }
 
@@ -64,7 +70,9 @@ class FactoryTest extends TestCase
         $db = $factory->openLazy(':memory:', null, ['idle' => 10.0]);
 
         $ref = new \ReflectionProperty($db, 'idlePeriod');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $value = $ref->getValue($db);
 
         $this->assertEquals(10.0, $value);
@@ -78,7 +86,9 @@ class FactoryTest extends TestCase
         $db = $factory->openLazy(__DIR__ . '/users.db');
 
         $ref = new \ReflectionProperty($db, 'filename');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $value = $ref->getValue($db);
 
         $this->assertEquals(__DIR__ . '/users.db', $value);
@@ -92,7 +102,9 @@ class FactoryTest extends TestCase
         $db = $factory->openLazy(':memory:');
 
         $ref = new \ReflectionProperty($db, 'filename');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $value = $ref->getValue($db);
 
         $this->assertEquals(':memory:', $value);
@@ -106,7 +118,9 @@ class FactoryTest extends TestCase
         $db = $factory->openLazy('');
 
         $ref = new \ReflectionProperty($db, 'filename');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $value = $ref->getValue($db);
 
         $this->assertEquals('', $value);
@@ -127,7 +141,9 @@ class FactoryTest extends TestCase
         chdir('../');
 
         $ref = new \ReflectionProperty($db, 'filename');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $value = $ref->getValue($db);
 
         chdir($original);

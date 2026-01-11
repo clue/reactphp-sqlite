@@ -22,7 +22,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionMethod($database, '__construct');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->invoke($database, $process);
 
         $database->on('error', $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
@@ -47,7 +49,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionMethod($database, '__construct');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->invoke($database, $process);
 
         $database->on('error', $this->expectCallableOnceWith($this->isInstanceOf('RuntimeException')));
@@ -70,7 +74,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $promise = $database->exec('USE a');
@@ -92,7 +98,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $promise = $database->query('SELECT 1');
@@ -115,7 +123,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $promise = $database->quit();
@@ -137,7 +147,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $promise = $database->quit();
@@ -162,7 +174,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $database->on('close', $this->expectCallableOnce());
@@ -186,7 +200,9 @@ class ProcessIoDatabaseTest extends TestCase
         $database = $ref->newInstanceWithoutConstructor();
 
         $ref = new ReflectionProperty($database, 'process');
-        $ref->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $ref->setAccessible(true);
+        }
         $ref->setValue($database, $process);
 
         $database->on('close', $this->expectCallableOnce());
